@@ -1,0 +1,4 @@
+CXX_STD = CXX11
+
+PKG_CXXFLAGS = -I../inst/include -O2 -Wno-unused-variables
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -lpthread

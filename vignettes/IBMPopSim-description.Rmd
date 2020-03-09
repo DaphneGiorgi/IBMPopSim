@@ -1,0 +1,174 @@
+---
+title: "IBMPopSim description"
+author:
+    - Daphné Giorgi
+    - Sarah Kaakaï
+    - Vincent Lemaire
+output:
+    #rmarkdown::html_vignette:
+    #rmarkdown::html_document:
+    BiocStyle::html_document:
+        toc: true
+        toc_depth: 2
+        toc_float: true
+        #number_sections: true
+    #prettydoc::html_pretty:
+    #theme: cayman
+    #highlight: github
+package: IBMPopSim
+mathjax: "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+vignette: >
+  %\VignetteIndexEntry{IBMPopSim description}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(IBMPopSim)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The IBMPopSim package is conceived to simulate the random evolution of structured population dynamics, called stochastic Individual Based Models (IBMs).
+
+The package allows users to simulate the random evolution of  a population in which  individuals are characterised by their date of birth, a set of (discrete or continuous) attributes, and their potential date of death.  
+The population is modified due to different types of events  defined by the user, and occuring at random dates. These events include the birth/arrival or death/exit of an individual in the population, an individual changing caracteristics, or custom events defined by the user.  
+Once the events modifiying the population have been defined, the last step before simulating the population evolution is to specify the so-called events intensities, describing the frequency at which the different types of events occur in the population. 
+
+
+<p style="color:red";> A reprendre Once the theory being explained, we proceed to the description of the package.   
+Since the simulation of populations with a large size can be very time consuming, the main algorithm is compiled, using the Rcpp library.  
+Hence, the user needs to write a very little C++ code to describe the events that can occur in the population.  
+We give the detail of how this code has to be written here below.</p> 
+
+
+
+<p style="color:red";> plan de ce qui suit </p>
+
+# General features and package installation 
+
+<p style="color:red";> à partir du latex Section 3. Rajouter la section quick run? (cf latex)  
+Blabla: performance, C++ need motivations. Model compiled. Reference to some C++ rules.  
+Install  
+ install.packages("IBMPopSim")  
+Load  
+library("IBMPopSim")
+Vignettes  
+vignette(package = "IBMPopSim") </p>
+
+
+# Package description 
+
+In order to simulate a stochastic Individual-Based-Model, the user must specify the three building blocks of the models: 
+
+* An initial population,
+* The model parameters,
+* The different types of events and their intensities.
+
+
+The model can then be created from these three blocks and the population simulated.
+
+
+## Population 
+
+A population is a dataframe where each row corresponds to an individual's characteristics.  
+A population dataframe has at least two columns:
+
+* A column <tt>birth</tt> containing the birth dates of individuals in the population. 
+* A column <tt>death</tt> containing the birth dates of individuals in the population ( <tt>NA</tt> for alive individuals).
+and each individual needs to have at least two caracteristics: 
+
+A population dataframe can contain more than two columns if individuals are described by additional caracteristics such as gender, size, spatial location... 
+
+Here is an example of population dataframe sample from the England and Wales 2014 population (<span style= "color:red"> source </span>)
+
+```{r}
+head(EW_pop_14$sample)
+```
+
+Here, the population is considered from the initial time $t_0=0$. At this time, the first individual in the population is of age $t_0 - (-106.9055) = 106.9055$.
+
+
+
+## Model parameters
+
+<span style= "color:red"> TO DO </span>
+
+## Creating an event with IBMPopSim
+
+### Events description
+
+#### Event type
+
+<span style="color:red"> Reprendre section 2 latex </span>
+
+<span style="color:red"> Dans la version finale je vois plus les deux paragraphes suivant  dans une première section qui décrirait le modèle de manière plus "théorique", je les met ici pour l'instant</span>
+
+#### Event intensity 
+
+
+We call event intensity a function describing the frequency at which an event can occur to *an individual* <tt> I</tt> in the population. 
+This function can depend on: 
+
+* The individual age and caracteristics,
+* The time t, 
+* Other individuals' age and caracteristics,
+* The model parameters. 
+
+When the intensity at which an event can occur to an individual  does not depends on the other individuals living in the population (there are no interactions for this specific event), the intensity function is said to be in the class of <tt>individual</tt>  intensity functions.    
+Otherwise, the intensity function is the class of <tt>interaction</tt> functions.   
+Note that events with  individual intensities are much faster to simulate since they only  require to observe *one* individual to be computed. 
+
+Sometimes, the intensity refers to the frequency at wich an event can occur in *all the population*. This is the case for instance when individuals enter  the population at a constant rate (intensity of class <tt>poisson</tt>), or at a rate only depending on time (intensity of class <tt>inhomogeneous_poisson</tt>).
+
+#### Event kernel
+
+If an individual <tt>I</tt> dies a time $t$, the individual is simply removed from the population. However, for some types of events, the user should precise how the population is modified. 
+
+For instance, if an new individual enters the population (entry event), the age and caracteristics of this new individual should be specified in a kernel function. Similarly, if a swap event occurs, the new caracteristics of the individual should be determined. By default, a newborn individual inherits the caracteristics of his parents, but the user might want to chose the caracteristics of the newborn diffently. 
+
+The kernel function <span style="color:red"> tirage aléatoire d'age+caractéristique. ON explique plus tard comment cela est défini par le user.</span>
+
+### Creating an event 
+
+The call to the function creating an event is as follow, 
+
+
+<tt>mk_event_CLASS(type = "TYPE", ...)</tt>
+
+
+where <tt>CLASS</tt> is replaced by the class of the event intensity and <tt>TYPE</tt> is the event type. The other arguments of the functions depend on the event class.  
+The following tables summarize the different intensity classes and types of events:
+
+| Event type   | <tt>TYPE</tt>  |
+|---|---|
+| Birth | <tt>birth</tt> |
+| Entry | <tt>entry</tt> |
+| Death | <tt>death</tt> |
+| Exit | <tt>exit</tt> |
+| Swap | <tt>swap</tt> |
+| Custom | <tt>custom</tt> |
+
+
+| Intensity class |<tt>CLASS</tt> |
+|---|---|
+|Poisson|<tt>poisson</tt>|
+|Inhomogeneous Poisson|<tt> inhomogeneous_poisson </tt>|  
+|Individual| <tt>individual</tt>|
+|Interaction| <tt>interaction </tt>|
+
+**Individual event creation**
+
+**Interaction event creation**
+
+**Poisson and Inhomogeneous Poisson events creation**
+
+**Kernel code** 
+The modification of the population related to the event is described in what we call the \emph{kernel} of the event. This action will be created from the event type (birth, entry, death, exit, swap, custom) and an some optional C++ code given by the argument \texttt{kernel\_code}.
+
+The predefined kernels of the events and the available variables for the C++ code of the kernels are described in what follows.
+
+
+## Model creation
+
+
+## Simulation and output

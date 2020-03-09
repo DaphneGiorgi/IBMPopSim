@@ -1,0 +1,237 @@
+---
+title: "Human population"
+author:
+    - Daphné Giorgi
+    - Sarah Kaakaï
+    - Vincent Lemaire
+output:
+    #rmarkdown::html_vignette:
+    #rmarkdown::html_document:
+    BiocStyle::html_document:
+        toc: true
+        toc_depth: 2
+        toc_float: true
+        keep_tex: true
+        #number_sections: true
+    #prettydoc::html_pretty:
+    #theme: cayman
+    #highlight: github
+package: IBMPopSim
+mathjax: "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+vignette: >
+  %\VignetteIndexEntry{Human population}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(IBMPopSim)
+library(ggfortify)
+library(gridExtra)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document provides an first simple example of usage of the package IBMPopSim, for simulating a human population with only birth and death events.
+
+# Example description
+The human population has 2 genders, male and female and is age-structured.
+
+An individual can give birth (only if female) or die.
+
+# Population creation
+
+The package contains the pyramid of ages of aggregated England's population for the year 2014. <p style = "color:red"> mettre les references des données</p>
+
+```{r}
+# faire un
+str(EW_pop_14)
+#plot_pyramid(EW_pop_14$age_pyramid)
+```
+
+```{r}
+head(EW_pop_14$age_pyramid)
+```
+
+```{r}
+plot_pyramid(EW_pop_14$age_pyramid)
+```
+
+The package contains a human population of size $10^5$ sampled from the pyramid of ages of England's population for the year 2014.
+
+
+
+# Model parameters
+
+```{r}
+birth_sex_ratio = 1.05
+params <- with(EW_pop_14$rates,
+    list(
+        "p_male" = birth_sex_ratio / (1+birth_sex_ratio),
+        "birth" = stepfun(x=seq(1,130), y=birth),
+        "death_male" = stepfun(x=seq(1,130), y=death_male),
+        "death_female" = stepfun(x=seq(1,130), y=death_female)
+    )
+)
+```
+
+```{r}
+lbl = labs(x="Age", y="Intensity")
+thm = theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(
+    autoplot(params$birth, shape = NULL) + ggtitle("Birth intensity") + lbl + thm,
+    autoplot(params$death_male, shape = NULL) + ggtitle("Death male intensity") + lbl + thm,
+    autoplot(params$death_female, shape = NULL) + ggtitle("Death female intensity") + lbl + thm
+)
+```
+
+# Events description
+There are 2 possible events :
+
+- Birth
+- Death
+
+The birth and the death intensities are bounded step functions.
+
+
+We create the birth event:
+```{r}
+birth_event <- mk_event_individual(
+    type = "birth", name = "birth",
+    intensity_code = "if (I.male) result = 0; else result = birth(age(I, t));",
+    kernel_code = "newI.male = CUnif(0, 1) < p_male;"
+)
+```
+
+and we create the death event:
+```{r}
+death_event <- mk_event_individual(
+    type = "death", name = "death",
+    intensity_code = "result = (I.male) ? death_male(age(I, t)) : death_female(age(I, t));"
+)
+```
+
+# Model creation and simulation
+
+
+We create the model:
+```{r}
+get_characteristics(EW_pop_14$sample)
+```
+
+```{r}
+model <- mk_model(
+    characteristics = get_characteristics(EW_pop_14$sample),
+    events = list(birth_event, death_event),
+    parameters = params
+)
+
+summary(model)
+```
+
+```{r}
+birth_max <- max(params$birth)
+death_max <- with(params, max(max(death_male), max(death_female)))
+```
+
+```{r}
+is.numeric(c(birth_max, death_max))
+```
+
+Run the simulation and visualize the pyramid of ages of the final population.
+
+```{r}
+pop_out <- popsim(model = model,
+       population = EW_pop_14$sample,
+       events_bounds = c(birth_max, death_max),
+       parameters = params,
+       age_max = 130)
+```
+
+```{r}
+str(pop_out)
+```
+
+```{r}
+plot_population(pop_out, time = 100)
+```
+
+# Different simulations with the same model
+
+```{r}
+#save(pop_out, file = 'EW_pop_out.rda', compress = 'xz')
+```
+
+## Deactivate the birth event
+
+```{r}
+pop_out <- popsim(model = model,
+       population = subset(EW_pop_14$sample, birth < -40),
+       events_bounds = c(0, death_max),
+       parameters = params,
+       age_max = 130,
+       times = c(0,90))
+```
+
+```{r}
+str(pop_out)
+```
+
+```{r}
+pyramid = age_pyramid(pop_out, time=90)
+age_cutoff = 100
+```
+
+```{r}
+pop_out 
+```
+
+```{r}
+age_pyramid(pop_out, ages = 70:110, time = 30)
+```
+
+```{r}
+plot_population(pop_out, ages = 70:110, time = 30)
+```
+
+```{r}
+pyr_cutoff <- pyramid %>% group_by(male) %>% filter(age >= age_cutoff) %>% summarise(value = sum(value))
+
+```
+
+```{r}
+pyr_cutoff
+```
+
+```{r}
+nrow(pyr_cutoff)
+```
+
+```{r}
+pyr_cutoff == NULL
+```
+
+```{r}
+pyramid <- rbind(subset(pyramid, age < age_cutoff), data.frame(age=age_cutoff, pyr_cutoff))
+
+```
+
+```{r}
+pyramid <- rbind(pyramid, data.frame(age=age_cutoff+1, male=c(TRUE,FALSE), value=0))
+
+```
+
+```{r}
+plot_pyramid(pyramid)
+```
+
+```{r}
+#plot_population(pop_out, t=80)
+```
+
+```{r}
+#save(EW_pop_out, file = 'EW_pop_out.rda', compress = 'xz')
+```
+
+```{r}
+
+```

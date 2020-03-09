@@ -1,0 +1,188 @@
+---
+title: "Population with genetically variable traits"
+author:
+    - Daphné Giorgi
+    - Sarah Kaakaï
+    - Vincent Lemaire
+output:
+    #rmarkdown::html_vignette:
+    #rmarkdown::html_document:
+    BiocStyle::html_document:
+        toc: true
+        toc_depth: 2
+        toc_float: true
+        #number_sections: true
+    #prettydoc::html_pretty:
+    #theme: cayman
+    #highlight: github
+package: IBMPopSim
+bibliography: IBMPopSim.bib
+mathjax: "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+vignette: >
+  %\VignetteIndexEntry{Population with genetically variable traits}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(IBMPopSim)
+library(ggfortify)
+library(gridExtra)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document provides an example of usage of the package IBMPopSim, for simulating an age-structured population with genetically variable traits. It is based on the [@MR2562651].
+
+# Example description
+
+We follow Example 1 of [@MR2562651].
+
+Individuals are characterized by their body size at birth $x_0 \in [0,4]$ which is the heritable trait subject to mutation, and by their physical age $a \in [0,2]$ with aging velocity 1. Body size is an increasing function of age:
+$$x=x_0 + ga$$
+where $g$ is the growth rate, which is assumed constant and identical for all individuals.
+
+
+
+# Population creation
+
+
+```{r}
+# Generate population
+N <- 900
+x0 <- 1.06
+agemin <- 0.
+agemax <- 2.
+```
+
+
+```{r}
+pop_init <- data.frame(
+    "birth" = runif(N, agemin, agemax),
+    "death" = as.double(NA),
+    "birth_size" = x0
+)
+```
+
+```{r}
+head(pop_init)
+```
+
+# Events description
+There are 2 possible events :
+
+- Birth (with or without mutation)
+- Death
+
+Each event is caracterised by its intensity and its kernel, as follows.
+
+## Birth with and without mutation
+
+An individual of size $x_0 \in [0,4]$ gives birth at the age independent rate :
+$$b(x_0) = \alpha (4 − x_0)$$
+With probability $p = 0.03$ a mutation occurs and affects $x_0$. The new trait is $x_0'  = \min(\max(0, x_0 + G), 4)$, where $G$ is a Gaussian r.v. with expectation 0 and variance 0.01. With probability $1 − p$, the offspring inherits its parent’s trait, $x_0$.
+
+The birth event is then an individual event of type birth, created as follows:
+```{r}
+params_birth <- list(
+    "p" = 0.03,
+    "sigma" = sqrt(0.01),
+    "alpha" = 1
+)
+```
+
+```{r}
+birth_event <- mk_event_individual(
+    type = "birth", name = "birth",
+    intensity_code = 'result = alpha*(4 - I.birth_size);',
+    kernel_code = 'if (CUnif() < p)
+        newI.birth_size = min(max(0., CNorm(I.birth_size, sigma)), 4.);'
+)
+```
+
+## Death
+
+The death rate of an individual with trait $x_0 \in [0, 4]$ and age $a \in [0, 2]$ living in a population
+$Z$ is given by:
+
+$$d(x_0,a,Z) = \int_{\tilde \chi} U (x_0 + g a − x_0' − g a')Z(dx_0' , da')$$
+where
+
+$$U(x-y) = \beta \left( 1- \frac{1}{1+1.2 \exp(-4(x-y))}\right) \in \left[ 0, \beta\right] $$
+The computation of the integral over all the population can be done in two ways: we can make the sum over all the population, or we can pick randomly an individual in the population and approximate the integral with this single interaction (due to the convergence in expectation).
+Hence we can create two death events in the following way:
+
+```{r}
+params_death <- list(
+    "g" = 1,
+    "beta" = 1./300.
+)
+```
+
+```{r}
+code_lambda_death <-
+'
+    double x_I = I.birth_size + g * I.age(t);
+    double x_J = J.birth_size + g * J.age(t);
+    result = beta * ( 1. - 1./(1. + 1.2 * exp(-4. * (x_I-x_J))) );
+'
+death_random_event <- mk_event_interaction(
+    type = "death",
+    interaction_type = "random",
+    interaction_code = code_lambda_death
+)
+death_full_event <- mk_event_interaction(
+    type = "death",
+    interaction_type = "full",
+    interaction_code = code_lambda_death
+)
+```
+
+# Build model
+We can finally create the two corresponding models (for full and random interaction):
+
+```{r}
+model_full <- mk_model(
+    characteristics = get_characteristics(pop_init),
+    events = list(birth_event, death_full_event),
+    parameters = c(params_birth, params_death)
+)
+model_random <- mk_model(
+    characteristics = get_characteristics(pop_init),
+    events = list(birth_event, death_random_event),
+    parameters = c(params_birth, params_death)
+)
+
+summary(model_full)
+```
+
+We can make a comparison between full and random performances and at the same time observe the cleaning frequence impact on execution time:
+
+# Run simulation
+```{r}
+T = 200
+
+#res_full <- model_full$simulate(population, params, T=T, multithreading=FALSE)
+
+pop_random <- popsim(model = model_random,
+    population = pop_init,
+    events_bounds = c(4*params_birth$alpha, params_death$beta),
+    parameters = c(params_birth, params_death),
+    age_max = 2,
+    times = c(0, T),
+    multithreading=FALSE
+)
+```
+
+# Output
+```{r}
+
+pop_out_plot_rand <- cbind(pop_random, "death_date_censored" = pmin(pop_random[,"death"],T,na.rm=TRUE))
+
+ggplot(pop_out_plot_rand)+
+geom_segment(aes(x= birth,xend=death_date_censored,y= birth_size,yend=birth_size ),colour="blue", alpha=0.1)
+
+```
+
+```{r}
+
+```
