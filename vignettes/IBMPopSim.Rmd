@@ -1,0 +1,787 @@
+---
+title: "IBMPopSim package description"
+author: "Daphné Giorgi, Sarah Kaakai, Vincent Lemaire"
+pkgdown:
+  as_is: true
+output:
+  bookdown::html_document2:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+  bookdown::pdf_document2:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+bibliography: IBMPopSim.bib 
+package: IBMPopSim
+vignette: >
+  %\VignetteIndexEntry{IBMPopSim description}
+  %\VignetteEncoding{UTF-8}
+  \usepackage[utf8]{inputenc}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+```{r knitr_opts, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  fig.align = "center",
+  collapse = TRUE
+)
+```
+
+```{r init, include=FALSE}
+library(IBMPopSim)
+library(dplyr)
+library(purrr)
+```
+
+The IBMPopSim package is conceived to simulate the random evolution of structured population dynamics, called stochastic Individual Based Models (IBMs), based on the description of individual behaviors. 
+
+The package IBMPopSim allows the efficient simulation of a wide class IBMs where individuals are marked by their date of birth and a set of (discrete or continuous) characteristics. The scope of applications includes population models in actuarial science, biology, demography, ecology, epidemiology or economy. 
+
+An IBM is summarized by the different types events occurring in the population at random dates. These events include the birth/arrival or death/exit of an individual in the population, and individuals changing of  characteristics.
+Once the events modifying the population have been defined, the last step before simulating the population evolution is to specify the so-called events intensities, describing the frequency at which the different types of events occur in the population. 
+
+
+# General features and package installation 
+
+## Brief overview of Individual-Based-Models (IBMs)
+
+Stochastic IBMs can be defined as a general class of population dynamics models, where different types of events can occur to individuals at random dates, depending on their age (or equivalently their date of birth) and characteristics (gender, location, size, socioeconomic class...), and interactions with others.   
+
+An IBM can be summarized by the different types events that can occur to individuals and modify the population composition, and how frequently they happen. Let us start by recalling briefly these features before going into detailed on how they can be defined in IBMPopSim. 
+
+### Events type and associated kernel {#eventsTh}
+
+In IBMPopSim, the population can evolve according to six main types of events:
+
+* **Birth event**: addition of an individual of age 0 to the population. 
+* **Death event**: removal of an individual from the population. 
+* **Entry event**: arrival of an individual in the population.
+* **Exit (emmigration) event**: exit from the population (other than death). 
+* **Swap event**: an individual changes of characteristics.
+* **custom events**.
+
+With each event type is associated  an  **event kernel**, describing how the population is modified following the occurrence of the event. For instance, if an individual `I` dies or exit a time $t$, the individual is removed from the population. 
+
+For  other types of events, the event kernel has to be specified. Indeed, if an new individual enters the population (entry event), the rule for choosing the  age and characteristics of this new individual has to be defined. For instance, the characteristics of a new individual in the population can be chosen uniformly in the space of all characteristics, or can depends on the distribution of his parents or those of the other individuals composing the population.    
+
+### Events intensities {#Eventintensityth}
+
+Once the different types or events and their action have been defined, it remains to define how frequently they can occur to define properly an IBM. 
+
+An event intensity is a function $\lambda^e(I,t)$ describing the frequency at which an event $e$ can occur to *an individual* ` I` in the population at a time $t$. Informally, given an history of the population $(\mathcal{F}_t)$, the probability of event $e$ occurring to individual `I` during a small interval of time $(t,t+dt]$ is proportional to $\lambda^e(I,t)$:
+\begin{equation}
+  \mathbb{P}(\text{event } e \text{ occurring to I during } (t,t+dt] | \mathcal{F}_t) = \lambda^e(I,t)dt. 
+\end{equation}
+
+The intensity function $\lambda^e$ can depend on: 
+
+* The individual's age and characteristics,
+* The time $t$, 
+* Interactions with other individuals in the population,
+* Other model parameters. 
+
+When the intensity $\lambda^e$ does not depends on the other individuals living in the population (there are no interactions for this specific event), the intensity function is said to be in the class of **individual**  intensity functions. This is case for instance when the death intensity of individuals only depend on their age and characteristics.      
+Otherwise, the intensity function is said to be the class of **interaction** functions.  In this package, we mainly focus on ``quadratic interactions'', that is of intensity functions of the form
+
+\begin{equation}
+\lambda^e(I,t) = \sum_{J \in pop} U(I,J,t).
+  (\#eq:interaction)
+\end{equation}
+
+The interaction function $U(I,J,t)$ represent the interaction between two individuals $I$ and $J$ at time $t$. See for instance the `vignette('IBMPopSim_interaction)` for examples of intensities with interactions.   
+
+Sometimes, the intensity refers to the frequency at which an event can occur in *all the population*. This is the case for instance when individuals enter  the population at a constant rate $C^e$ (intensity of class `poisson`), or at a rate $(\Lambda^e_t)$ depending on time  (intensity of class `inhomogeneous_poisson`). In this case, the intensity $\Lambda^e_t$ is informally defined as 
+
+\begin{equation}
+\mathbb{P}(\text{event } e \text{ occurring in the population during } (t,t+dt] | \mathcal{F}_t) = \Lambda^e_t dt.
+\end{equation}
+
+### Simulation algorithm {#algo}
+
+The IBM simulation algorithm is based on an acceptance-rejection method for simulating random times called thinning, generalizing the algorithm proposed by [@MELEARD2004] (see also [@MR2562651], [@boumezoued2016]).     
+The main idea of the algorithm is to use candidate event times with *constant* intensity $\bar \lambda$ (which corresponds to exponential variables with parameter $\bar \lambda$). $\bar \lambda$ must *dominates* the true event intensity $\lambda^e(I,t)$ for all individuals $I$:
+
+\begin{equation}
+\lambda^e(I,t) \leq \bar{\lambda}, \quad \forall I \in \text{pop}, \; t \in [0,T].
+\end{equation}
+
+Starting from time $t$, once a candidate event time $t + \tau^e$ has been proposed for a given event $e$ and individual $I$, it remains to accept or reject the candidate event with probability $\frac{\lambda^e(I,t+\tau^e)}{\bar{\lambda}}$.  If the candidate event time is accepted, then the event $e$ occurs to the individual $I$ at time $t + \tau^e$. The main idea of the algorithm implemented can be summarized as follows: 
+
+
+**Thinning algorithm** 
+
+1.  Draw a candidate time $t+\tau^e$ for event $e$, $\tau^e \sim \mathcal E(\bar \lambda)$ and an individual $I$. 
+1.  Draw a uniform variable $\theta \sim \mathcal U([0,1])$.
+1.  **If** $\theta \leq \dfrac{\lambda^e(I,t+\tau^e)}{\bar\lambda}$ **then**   
+$\qquad$ Apply event kernel to individual $I$   
+**else**   
+$\qquad$ Do nothing and start again from $t+\tau^e$.
+
+
+In the presence of interactions, the intensity of an individual $I$ is computed making the sum over all individuals $J$ in the population of the interactions between $I$ and $J$, which can be very time consuming.      
+We introduce in `IBMPopSim` a "randomized" algorithm, in which this computation is by picking randomly another individual in the population and computing its interaction function with the given individual.  In this case the algorithm presented above is simply modified as follows: two individuals are picked,  the intensity function $\lambda^e$ in the algorithm is replaced by the interaction function $U^e$, and $\bar \lambda$ by a bound $\bar U^e$ of $U^e$. 
+
+
+## Overview of package structure 
+
+Emphasis is placed on code efficiency (speed of execution) and ease of implementation, while trying to be as general as possible. 
+
+The implementation of an IBM model is based on a few building blocks, easy to manipulate. For code efficiency,  we have chosen to let the user write a few lines of C++ code in R interface to define events intensity and action kernel. The user's  code is concatenated with internal code in the package. Compilation is done via the `sourceCpp` call of the `Rcpp` package. The code produced is usually very fast and can be multithreaded.  
+
+Thanks to  model parameters and predefined functions, the C++ code to be written is simple and does not require a great knowledge of C++: it is enough to respect the rules of syntax, to do arithmetic operations and tests. Furthermore, various inputs of the model can be modified without having to recompile the code. 
+
+
+## Installation 
+```{r child="../man/fragments/installation.Rmd"}
+
+```
+
+## Quick model creation and simulation
+
+Before going into details on the different steps for defining an IBM in IBMPopSim, let us first go quickly through an example of model creation and simulation.   
+In order to define a model, the user must specify three building blocks: 
+
+* An initial population (see Section \@ref(population)),
+* The model parameters (see Section \@ref(params)),
+* The different events thant can occur and their intensity (see Section \@ref(events)).
+
+The model can then be created from these three blocks.
+
+```{r child="../man/fragments/quick_model.Rmd"}
+
+```
+
+# Package description 
+
+The first step to define a model in IBMPopSim is to define the population structure. 
+
+## Population, individuals, characteristics {#population}
+
+A population is a data frame in which each row corresponds to an individual, and which has at least two columns:
+
+* A column `birth` containing the birth dates of individuals in the population. 
+* A column `death` containing the birth dates of individuals in the population ( `NA` for alive individuals).
+
+The data frame can contain more than two columns if individuals are described by additional characteristics such as gender, size, spatial location...   
+In the example below, individuals are described by their birth and death dates, as well a Boolean characteristics called `male`. For instance, the first individual is a female whose age at $t_0=0$ is $t_0 - (-106.9055) = 106.9055$.
+
+```{r}
+head(pop)
+```
+
+- **Type of a characteristic**.    
+A characteristic must be of atomic type: logical (`bool` in C++), integer (`int`), double or character (`char`). The function `?get_characteristic` allows to easily get characteristics names and their types (in R and C++) from a population data frame. See also section \@ref(cppcharacteristics).
+
+- **Name of a characteristic**.    
+We draw the attention to the fact that some names for characteristics are forbidden, or are reserved to specific cases. The reserved words include:
+    - `birth` and `death`: which are of type `double`, referring to dates of the events of birth and death,
+    - `male`: can only be used for a Boolean characteristics, usually referring to the individuals' sex/gender,
+    - `entry`: can only be used with an event of type `entry`. This characteristic is a `double` containing the date of entry in the population of the individual. 
+    - `out`: can only be used with an event of type `exit`. This characteristic is a Boolean which is `TRUE` if the individual came out of the population at time `death` 
+    - `id`: can only be used in order to defined the individuals unique identifier (see Section \@ref(simulationswap)),
+    - `time`, `I`, `J`, `pop`, `newI`, `t` and `k` :  forbidden as characteristics or variable name,
+    - C++ reserved words: forbidden as characteristics or variable name. Note that `char`
+is a reserved word. See [here](https://en.cppreference.com/w/cpp/keyword) for a comprehensive list of C++ reserved words.    
+
+- **An individual in C++**.     
+In the C++ compiled model, an individual `I` is an object of the C++ class `individual` containing some attributes:
+    - `birth_date` and `death_date` which are `double`,
+    - the characteristics,
+    - and some methods:
+        - `I.age(t)`: a `const` method returning the age of an individual `I` at time `t`,
+        - `I.set_age(a, t)`: to set the age `a` at time `t` of an individual `I`(set `birth_date` at `t-a`),
+        - `I.is_dead(t)`: a `const` method returning `true` is the individual `I` is dead at time `t`.
+For convenience, there is also a global function `age` to get the age of an individual `I` so that `age(I, t)` is equivalent to `I.age(t)`.
+
+- **Using characteristic in C++ code**.
+If `Chi` is the name of a characteristic, then `I.Chi` returns the value of the characteristic `Chi` for the individual `I`. For instance, in the previous example `I.male` would equal to `true` if `I` is a male of `false` if `I` is a female. 
+
+- **A population in C++**
+During the model creation, a population of individuals is automatically created from the initial population data frame. In C++ we denote by `pop` the current population which is an object of a internal class.containing some methods:
+    - an operator `[]` to access the `k`-th individual, note that most of time we denote `k` the current individual such that `pop[k]` is equivalent to `I` (in fact `I` is defined as a reference on `pop[k]`),
+    - `pop.kill(k, t)` to kill the individual `k`  at time `t`.
+
+## Model parameters {#params}
+
+A list of model parameters can be defined to simplify the events creation (see also section \@ref(cppcharacteristics) for more details). These parameters can be of various types:
+
+- **Atomic type**: likewise characteristics, a parameter may be `logical`, `integer`, `double` or `character` (and internal in C++ there is conversion to `bool`, `int`, `double` and `char` respectively),
+- **Vector or matrix**: we call vector a `Numeric` of `double` of length larger than 1 (and dimension 1), we use `RcppArmadillo` to convert theses types in `arma::vec` and `arma::mat` in C++,
+- **Predefined function of one variable**: such functions are `stepfun`, `linfun`, `gompertz`, `weibull`, `piecewise_x`, in C++ these functions are `function_x`,
+- **Piecewise function of two variable**: `piecewise_xy` which is `function_xy` in C++,
+- **List of predefined functions**: of same C++ type, either `function_x` or `function_xy`.
+
+For example, 
+```{r}
+params <- list("coeff" = 1.1,
+               "death_function" = gompertz(0.1, 0.005))
+```
+
+creates a numeric parameter `coeff` and a Gompertz function `death_function` which can be used when creating the events of the model. 
+
+**Predefined IBMPopSim functions** are classes of functions predefined in the package to simplify models creation. For instance, `gompertz(a,b)` returns the function $g(x) = a \exp(bx)$ and `stepfun` is the usual R function for the creation of step functions. Another example is `piecewise_xy` which allow the creation of age and time functions. See Section \@ref(cppIBMfunctions) for a description of all IBMPopSim functions, and Section \@ref(cpparmadillo) for more details of Armadillo objects. 
+
+## Events creations {#events}
+The last and most important step of the model creation is the events creation.  The call to the function creating an event  is of form, 
+
+`mk_event_CLASS(type = "TYPE", name ="NAME", kernel_code = "KERNEL_CODE", ...)`
+
+where `CLASS` is replaced by the class of the event intensity, `type` is the event type and `kernel_code` the event kernel. 
+
+The other arguments  depend on the intensity class. Tables \@ref(tab:evtype) and \@ref(tab:evclass)  summarize the different intensity classes and types of events introduced in Section \@ref(eventsTh).
+
+```{r evtype, echo=FALSE}
+x = c("Birth", "Entry", "Death", "Exit", "Swap", "Custom")
+y = c("`birth`", "`entry`", "`death`", "`exit`", "`swap`", "`custom`")
+knitr::kable(data.frame(x,y), "pandoc", col.names = c("Event type","`Type`"), caption = "Event types", booktabs = TRUE)
+```
+
+```{r evclass, echo=FALSE}
+x = c("Poisson", "Inhomogeneous Poisson", "Individual", "Interaction")
+y = c("`poisson`", "`inhomogeneous_poisson`", "`individual`", "`interaction`")
+knitr::kable(data.frame(x,y), "pandoc", col.names = c("Intensity class", "`Class`"), caption = "Intensity classes", booktabs = TRUE)
+```
+
+The intensity function and kernel of an event are defined through arguments of the function `mk_event_CLASS`. These arguments are strings composed of few lines of code defining an event frequency and its action of the event on individuals.  Since the model is compiled using Rcpp, the code should be written in C++. However, thanks to the model parameters and functions/variables of the package, even the non-experienced C++ user can define a model quite easily. Several examples are given in the several vignettes of this package, and basic C++  tools are presented in Section \@ref(cppessentials).
+
+The optional argument `name` gives a name to the event. If not specified, the name of the event is its type, for instance `death`. However, a name must be specified if the model is composed of several events with the same type.
+
+### Event kernel code
+
+The  argument `kernel_code` is `NULL` by default and doesn't have to be specified for death and exit events. For those types of events, the event kernel is automatically generated during the model creation. 
+
+1. **Death event**
+
+If the user defines a **death event**, the C++ code generated is 
+
+`pop.kill(k, t);`
+
+which removes the individual number `k` from the population `pop` if he dies. No  kernel has to be specified by the user.
+
+2. **Exit event**
+
+If an **exit event** is defined, a characteristic `out` is automatically added to individuals in the population. When  an individual `I` exit the population,`I.out` is set `TRUE` and his exit time is recorded as a "death" date. 
+
+3. **Birth event** 
+
+For a **birth event**, the default generated event kernel is that an individual `I` gives birth to a new individual `newI` of age 0 at the current time `t`, which  has the same characteristics than his parent `I`. If no kernel is specified, the default generated C++ code for a birth event is: 
+
+
+```
+individual newI = I; 
+newI.birth_date = t;  
+pop.add(newI); 
+```
+
+The user can modify the birth kernel, by specify the argument ```kernel_code`` of `mk_event_CLASS`. In this case, the generated code is 
+
+```
+individual newI = I;   
+newI.birth_date = t;  
+_KERNEL_CODE_
+pop.add(newI);
+```
+
+where `_KERNEL_CODE_` is replaced by the content of the `kernel_code` argument. For instance, in a population where individuals are characterized by their gender, the  kernel code
+
+```{r}
+birth_kernel_code <- "newI.male = (CUnif(0, 1) < p_male);"
+```
+
+creates new individuals which are males with  probability `p_male`, or females otherwise. Here, `p_male` should be included in the list of model parameters. 
+
+4. **Entry event**
+
+If an **entry event** is defined, a characteristic `entry` is automatically added to individuals in the population. When  an individual `I` enters the population,`I.entry` is set as the date at which the individual enters the population.    
+When an entry  occurs the individual entering the population is not of age $0$. In this case, the user must specify the `kernel_code` argument indicating how the age and characteristics  of the new individual are chosen. For instance, with
+
+```{r}
+entry_kernel_code <- "double a = CUnif(20,40); 
+                      newI.set_age(a,t); 
+                      newI.male = (CUnif(0, 1) < p_male);"
+```
+
+
+An individual who enters the population has an age `a` taken uniformly in $[20,40]$, and is a male with probability `p_male`. His characteristic `I.entry` is equal to `t`.
+
+The available variables for the birth and entry events C++ kernel codes are:
+
+```{r varBirth, echo=FALSE}
+Variable = c("`I`","`t`","` pop `","` newI `" , "Model parameters")
+Description = c("Current individual","Current time","Current population (vector)","New individual. By default for birth events `newI = I` with `newI.birth = t`","Depends on the model")
+knitr::kable(data.frame(Variable,Description), "pandoc", caption = 'C++ variables available for birth and entry events kernel code')
+
+```
+
+```{remark}
+When there are several entry events, the user can identify which events generated the entry of an individual by adding a characteristic to the population recording the event name/id  when it occurs. The same holds for the other types of events. See e.g. `vignette{'IBMPopSim_human_pop'}` for an example with different death events.
+```
+
+
+5. **Swap event**
+
+Finally, the  C++ kernel code for a **swap event** specifies how the new characteristics of the individual are chosen. The kernel code can depend on the following variables:
+
+```{r varSwap, echo=FALSE}
+Variable = c("`I`","`t`","` pop `", "Model parameters")
+Description = c("Current individual","Current time","Current population (vector)","Depends on the model")
+knitr::kable(data.frame(Variable,Description), "pandoc", caption = 'C++ variables available for swap events kernel code')
+
+```
+
+We can now describe the different intensity classes. 
+
+### Event creation with individual intensity
+
+As explained in \@ref(Eventintensityth), events with intensities in the class `individual` are intensity functions $\lambda^e(I,t)$ which depend only  on a  individual's age and characteristics, and on time.   
+They are created using the function 
+
+```
+mk_event_individual(type = "TYPE", name ="name", 
+                    intensity_code = "INTENSITY",   
+                    kernel_code = "KERNEL_CODE")
+``` 
+
+The `intensity_code` argument is a character string containing few lines C++ code describing the intensity function. The available variables for the intensity code are given in Table \@ref(tab:varInd) :
+
+```{r varInd, echo=FALSE}
+Variable = c("`I`","`t`", "Model parameters")
+Description = c("Current individual","Current time","Depends on the model")
+knitr::kable(data.frame(Variable,Description), "pandoc", caption = 'C++ variables available for individual intensities')
+
+```
+
+The intensity value has to be stored in a variable called `result`. 
+
+
+**Examples** 
+
+1. The intensity code below
+
+```{r}
+death_intensity<- " if (I.male)
+                      result = alpha_1*exp(beta_1*age(I, t));
+                    else
+                      result = alpha_2*exp(beta_2*age(I,t));"
+```
+
+
+corresponds to a death intensity equal to $d_1(a) = \alpha_1 \exp(\beta_1 a)$ for males and $d_2(a) = \alpha_2 \exp(\beta_2 a)$ for females. In this case, the intensity function depends on the individuals' age, gender, and on the model  parameters $\alpha = (\alpha_1, \alpha_2)$ and $\beta = (\beta_1, \beta_2)$. 
+
+2. This example creates a death event with intensity depending on age and time, equal to 
+\begin{equation*}
+d(t,a) = 0.1\exp(0.005a) 1_{\{0\leq t <5\}} + 0.08\exp(0.005a) 1_{\{5\leq t\}}
+\end{equation*}
+
+This is done by creating the death function $d$ using the predefined package functions `?piecewise_xy`and `?gompertz`. The function is then recorded as a model parameter and used in the argument `intensity_code` of `?mk_event_individual`. 
+
+```{r}
+time_dep_function <- piecewise_xy(c(5),
+                                  list(gompertz(0.1,0.005), 
+                                       gompertz(0.08,0.005)))
+time_dep_function(0,65) # death intensity at time 0 and age 65.
+params <- list("death_function"= time_dep_function)
+
+death_event <- mk_event_individual(type = "death", 
+                    intensity_code = "result=time_dep_intensity(t,age(I,t));")
+```
+
+
+
+### Event creation with interaction intensity
+
+Events with intensities in the class `interaction` are events which  occur to an individual at a frequency which is the result of interactions with other members of the population (see \@ref(Eventintensityth)), and which can be written as
+
+\begin{equation*}
+\lambda^e(I,t) = \sum_{J \in pop} U(I,J,t),
+  (\#eq:interaction)
+\end{equation*}
+
+where $U(I,J,t)$ is the intensity of the interaction between individual $I$ and $J$.
+
+
+An event with intensity in the class `interaction` is created by calling the function 
+
+```
+mk_event_interaction(type = "TYPE",  
+                     name = "NAME",
+                     interaction_code = "INTERACTION_CODE",
+                     kernel_code = "KERNEL_CODE",
+                     interaction_type="random")
+```
+
+The `intensity_code` argument contains few lines of C++ code describing 
+the interaction function $U$. The interaction function value has to be stored in a variable called `result`. The available variables for the intensity code are given in Table \@ref(tab:varInt):
+
+```{r varInt, echo=FALSE}
+Variable = c("`I`","`J`","`t`", "Model parameters")
+Description = c("Current individual","Another individual in the population","Current time","Depends on the model")
+knitr::kable(data.frame(Variable,Description), caption = 'C++ variables available for interaction code')
+
+```
+
+**Example** 
+
+```{r}
+death_interaction_code<- " result = max(J.size -I.size,0);"
+```
+
+In the example above, the death intensity of an individual `I` is the result of competition between individuals, depending on a characteristic named `size`:
+
+$$U(I,J,t) = (J.size - I.size)^+.$$
+
+If `I` meets randomly an individual `J` of size bigger than `I.size`, he can die at the intensity  `J.size-I.size`. The bigger is `I.size`, the lower is the death intensity of individual `I`. 
+
+
+The argument `interaction_type`, set by default at `random`, is an algorithm choice for simulating the model.    
+When `interaction_type=full`, the intensity of an individual is computed making the sum over all the individuals in the population of the interactions with the given individual. In IBMPopSim, we introduced a "randomized" algorithm, in which the intensity of an individual is computed by picking randomly another individual in the population and computing its interaction function with the given individual. In most cases, the `random` algorithm is  much faster than the `full` algorithm. 
+
+Note that events with individual intensities are also much faster to simulate since they only require to observe *one* individual to be computed.
+
+### Events creation with Poisson and Inhomogeneous Poisson intensity
+
+When a event occur in the population with an intensity which does not depend on the population, the event intensity is of (inhomogeneous) Poisson class.
+
+**Poisson intensity** When the event intensity is simply a constant, the class is called Poisson in reference to events occurring at jumps time of a Poisson process. Such events are created with the function
+
+```
+mk_event_poisson(type="TYPE",
+                 name="NAME",
+                 intensity="CONSTANT",   
+                 kernel_code = "KERNEL_CODE")
+```
+
+For instance, 
+
+```{r results='hide'}
+mk_event_poisson(type = "entry", intensity = "lambda", 
+                 kernel_code ="double a_I= max(CNorm(20,2),0); 
+                               newI.set_age(a_I,t);")
+```
+
+creates an event of type Entry, where individuals  enter the population at a constant intensity `lambda` (which has to be in the list of model parameters). When an individual `newI` enters the population at time `t`, his age is chosen as a normally distributed random variable, with mean 20 and variance 4, using the function `CNorm()` (see Section \@ref(randomvar)). 
+
+** Inhomogeneous Poisson intensity**  When the intensity depends on time (but not on the population), the event can be created similarly by using the function 
+
+``` 
+mk_event_inhomogeneous_poisson(type= "TYPE", name="NAME"
+                               intensity_code = "INTENSITY",   
+                               kernel_code = "KERNEL_CODE")
+```
+
+For instance, 
+
+```{r results='hide'}
+mk_event_inhomogeneous_poisson(type = "entry",
+                               intensity = "result = lambda*(1+ cos(t));", 
+                               kernel_code =" double a_I= CNorm(20,2); 
+                                             newI.set_age(a_I,t);")
+```
+
+creates the same event than before, but now individuals enter the population at the rate $\lambda(1+ \cos(t))$ depending on the current time `t`.
+
+
+## Model creation {#Modelcreation}
+Finally, the IBM model is created using the function `?mk_model`. The model is composed of: 
+
+* The characteristics names and types, which can be obtained from a population data frame with the function `?get_characteristics`,
+* The events list,
+* The model parameters.
+
+```{r eval=FALSE}
+model <- mk_model(characteristics = get_characteristics(pop),
+                  event = events_list,
+                  parameters = model_params)
+```
+
+
+During this step which can take a few seconds, the model is created and compiled using the Rcpp package. 
+One of the advantages of the model structure in IBMPopSim is that the model  depends only on the population characteristics' and parameters names and types, rather than their values.    
+This means that once the model has been created, various simulations can be done with different initial populations and parameters values. Thus, only one model has to be created to simulation a class of IBMs with varying parameters (see Section \@ref(Simulation1) for an example). 
+
+**Example**  Here is an example of model with a population structured by age and gender, with birth and death events. The death intensity of an individual of age $a$ is 
+$$d(a) = 0.008*\exp(0.02a),$$
+and females between 15 and 40 can give birth with birth intensity 0.05. The newborn is a male with probability $p_{male}= 0.51$. 
+
+```{r}
+params <- list("p_male"= 0.51, 
+               "birth_rate" = stepfun(c(15,40),c(0,0.05,0)),"death_rate"=gompertz(0.008,0.02))
+
+
+death_event <- mk_event_individual(type = "death", name= "my_death_event",
+                  intensity_code = "result = death_rate(age(I,t));")
+
+birth_event <- mk_event_individual( type = "birth", 
+                  intensity_code = " if (I.male)
+                                        result = 0; 
+                                     else 
+                                        result=birth_rate(age(I,t));",
+                  kernel_code = "newI.male = CUnif(0, 1) < p_male;")
+
+
+model <- mk_model(characteristics = get_characteristics(pop),
+                  events = list(death_event,birth_event),
+                  parameters = params)
+
+summary(model)
+```
+
+## Simulation and outputs {#simulation}
+
+Once the model has been created, the random evolution of the population can be simulated over a period of time $[0,T]$ by calling the function 
+
+```{r eval=FALSE, highlight=FALSE}
+popsim(model,population, events_bounds, parameters,age_max= Inf,time,...)
+```
+
+Where:
+
+* `model` is the model created in the previous step,
+* `population` is a population data frame representing the initial population,
+* `parameters` is the list of parameters value, 
+* `age_max` is the maximum age of individuals in the population (set by default to `Inf`),
+* `time` is the final simulation time $T$ or a vector of times (see \@ref(simulation_swap)),
+* `events_bounds` is a named vector of **bounds** for the intensity or interaction function of each event.
+
+
+### Events bounds 
+
+Since the IBM simulation algorithm is based on an acceptance-rejection method for simulating random times (see \@ref(algo)), the user has to specify bounds for the intensity (or interaction) function of each event before simulating a random path of the population evolution. Let us consider the model with a birth and death built in the previous section.  
+
+In the model example, the birth intensity of an individual of age $a$ is $0$ if he is a male, and 
+$$ b(a) = 0.005  1_{[15,40]},$$ 
+if the individual is a female. Thus, the intensity bound for birth events is 
+
+$$\bar\lambda_b = \sup_{a\geq 0} \;  \text{birth\_rate}(a) = 0.05$$ 
+
+Since the death intensity function is not bounded, the user will have to specify a maximum age $a_{max}$ in `popsim` (all individuals above $a_{max}$ die automatically). Then, the bound for death events is 
+
+$$ \bar \lambda_d = 0.008\exp(0.02 a_{max}).$$
+
+The events bounds are defined as a *named* R vector, with components names corresponding to the events names.  In our example, the death event has been named `"my_death_event"`. No name has been specified for the birth event which thus has the default name `"birth"`. Then, 
+
+
+```{r}
+a_max <- 120 # maximum age
+events_bounds <- c("my_death_event" = 0.008*exp(0.02*a_max),
+                  "birth" = max(params$birth_rate))
+
+events_bounds
+```
+
+
+Note that the `?max` operator has been overloaded for some predefined functions of the package such as `?stepfun`. 
+
+### Simulation without swap events {#Simulation1}
+
+
+Once the model and events bounds have been defined, a random trajectory of the population can be simulated by calling
+
+```{r}
+sim_out <- popsim(model, pop, events_bounds, params,
+                  age_max = a_max, time = 30)
+#str(sim_out)
+```
+
+`sim_out` is a list composed of
+
+* A list `arguments` of the simulation inputs, including the initial population, parameters and event bounds. 
+* A named numeric vector `logs` of variables related to the simulation algorithm. 
+* The simulation output called `population`.
+
+When there are no swap events (individuals don't change of characteristics), the evolution of the population over the period $[0,30]$ is recorded in a single data frame `sim_out$population`.    
+Each line of `sim_out$population` contains the information of an individual who lived in the population over the period $[0,30]$. This includes individuals who were initially in `pop`, as well as individuals who were born or entered the population. 
+
+```{r}
+str(sim_out$population)
+```
+
+
+Table \@ref(tab:logs) describes the elements of the vector `sim_out$logs`containing information on  simulation algorithm:
+
+```{r logs, echo=FALSE}
+ Elements= c("`proposed_events`","`effective_events`","`cleanall_counter`","`duration_main_algorithm`")
+Description = c("Number of candidate event times proposed during the simulation","Number of events which occured during the simulation","Number of population cleans", "Simulation time")
+knitr::kable(data.frame(Elements,Description), caption = 'Logs parameters')
+```
+
+For instance, the acceptance rate in the toy model is 
+```{r}
+sim_out$logs['effective_events']/sim_out$logs['proposed_events']
+```
+
+and the simulation time  is
+
+```{r}
+sim_out$logs['duration_main_algorithm']
+```
+
+**Parameters modification and event removal**
+
+As explained in Section \@ref(Modelcreation) the structure of the compiled model  allows  the parameters' values to be changed without recompiling the model.  For instance, the parameter  of the Gompertz death function can be modified to study the impact of an increase in  mortality.   
+Before running the simulation, the events bounds should be updated accordingly accordingly.  
+
+```{r results='hide'}
+params$death_rate <- gompertz(0.01,0.02) # New death rate
+
+events_bounds["my_death_event"] <- 0.01*exp(0.02*a_max) # Death event bound update
+
+new_sim_out  <- popsim(model, pop, events_bounds, 
+                       params, age_max = a_max, time = 30) # Population simulation 
+
+```
+
+
+An event can also be remove by setting the event bound to 0:
+
+```{r}
+sim_out_no_birth <- popsim(model, pop, 
+                           events_bounds = c("birth"=0, "my_death_event"= 0.01*exp(0.02*a_max)),
+                           params, age_max = a_max, time = 30) # Simulation without birth events
+```
+
+### Outputs
+
+The R data frame format for the output of the simulation allows all data manipulation functionalities of tidyverse or data.table packages to be used for analyzing the population. We also  provide base functions to study the simulation outputs.
+
+For instance, the population age pyramid can computed at a give time (resp. at multiple dates) with the function `?age_pyramid` (resp. `?age_pyramids`). We refer to the other vignettes for more details on age pyramids computation and visualization. 
+
+```{r}
+pop_out <- sim_out$population
+
+# Population age-pyramid at time 30:
+pyr <- age_pyramid(pop_out, ages = 0:a_max, time = 30) 
+plot_pyramid(pyr)
+```
+
+
+Mortality tables with compatibles with packages such as StMoMo can also be computed by with the functions `?death_table` and `?exposure_table`.
+
+```{r eval=FALSE}
+female_pop <- pop_out[pop_out$male==FALSE, ]
+Dxt <- death_table(female_pop, ages = 85:90,period = 20:30) # Death table (death age is age at death)
+Ext <- exposure_table(female_pop, ages = 85:90,period = 20:30) # Central Exposure-to-risk table
+```
+
+### Simple multithreading
+
+If there are **no interactions** between individuals, i.e. if there are no events with intensity of class `interaction`, then the simulation can be parallelized easily by setting the optional parameter `multithreading` (`FALSE` by default) to `TRUE`:
+
+```{r results=FALSE}
+sim_out <- popsim(model, pop, events_bounds, params,
+                  age_max = a_max, time = 30, multithreading = TRUE)
+```
+
+```{r echo=FALSE}
+sim_out$logs["duration_main_algorithm"]
+```
+
+By default, the number of threads is the number of concurrent threads supported by the available hardware implementation. The number of thread can be set manually with the optional argument `num_threads` of `?popsim`.
+
+
+
+## Simulation with swap events {#simulationswap}
+
+When there are swap events (individuals can change of characteristics), the dates of swap events and the changes of characteristics following each swap event should be recorded for each individual in the population, which is a memory intensive and computationally costly process.   
+To maintain efficient simulations in the presence of swap events, we propose the following solution. 
+
+###  Vector of times in `?popsim`. 
+
+In the presence of swap events, the argument `time` of `?popsim` should a vector of dates $(t_0,\dots, t_n)$. In this case, `popsim` returns in the object `population` a list of $n$ population data frames representing the population at time $t_1,\dots t_n$, simulated from  the initial time $t_0$.   
+For $i=1\dots n$, the $i$th data frame describes individuals who lived in the population during the period $[t_0,t_i]$,  with their characteristics at time $t_i$.
+
+
+**Examples** A population 100 thousand individuals (or particles) is generated, all born at time 0 and divided into two subgroups. Individuals can swap from subgroup 1 (resp. 2) to subgroup 2 (resp. 1) at  rate 0.1 (resp. 0.3). 
+
+```{r results=FALSE}
+pop <- data.frame("birth"= rep(0,1e5),"death"=rep(NA,1e5), 
+                         "sub_grp" = sample(1:2, 1e5, replace = TRUE))
+
+rates <- list( k12 = 0.1, k21=0.3)
+#Only swap events occur in the population
+swap_event <- mk_event_individual( type = "swap", 
+                  intensity_code = "if (I.sub_grp == 1) result = k12; 
+                                    else result = k21;",
+                  kernel_code = "I.sub_grp = 3 - I.sub_grp;")
+
+model_swap <- mk_model(characteristics =get_characteristics(pop), 
+                       events = list(swap_event),
+                       parameters = rates)
+```
+
+Then, the population is simulated from $t_0=0$ to $t_n =20$, and `popsim` returns a list of 20 data frames composed of the population  at times $t=1\dots 20$.
+
+```{r results=FALSE}
+time_vec <- 0:20
+
+sim_out <-popsim(model = model_swap, population = pop, 
+                 events_bounds = c("swap"=max(unlist(rates))), 
+                 parameters =  rates, 
+                 time = time_vec, 
+                 multithreading = TRUE)
+```
+
+The model is an ergodic two states continuous time Markov chain with stationary distribution $(p_1,p_2)=(0,75,0.25)$. The figure below illustrates the convergence of the probability to be in subgroup 1 to $p_1$
+
+```{r}
+pop_size <- nrow(pop)
+# Mean number of individuals in subgroup 1 at each time:
+p_1_t <- lapply(sim_out$population, function(pop_df){
+                      return(nrow(subset(pop_df, sub_grp==1))/pop_size)
+                })
+```
+
+```{r plot, echo=FALSE, fig.cap="Evolution of probability to be in subgroup 1"}
+plot(time_vec[-1],p_1_t, type ="l", xlab= "time",  ylab="")
+```
+
+```{remark}
+This example shows that IBMPopSIm can also be used to simulated continuous time Markov Chain with finite state space.
+```
+
+### Individual life courses
+
+It is  possible to isolate the individuals' life course, by setting the optional argument `with_id` of `?mk_model` to `TRUE`. In this case, a new characteristic called `id` is automatically added to the population (if not already defined), identifying each individual with a unique integer. 
+
+```{r}
+model_swap_id <- mk_model(characteristics =  get_characteristics(pop), 
+                          events = list(swap_event), 
+                          parameters = rates, 
+                          with_id = TRUE)          
+```
+
+
+```{r}
+sim_out_id <-popsim(model = model_swap_id, 
+                    population = pop, 
+                    parameters = rates, 
+                    events_bounds = c("swap"=0.3),
+                    time = seq(0,5, by=1), 
+                    multithreading = TRUE)
+```
+
+
+```{r}
+head(sim_out_id$population[[1]])
+```
+
+These data frames can be merged into a single data frame summarizing the life course of each individual, by calling the function `merge_pop_withid`.
+
+```{r}
+pop_list <- sim_out_id$population
+pop_merge <- merge_pop_withid(pop_list)
+head(pop_merge)
+```
+
+Each line of `pop_merge` corresponds to the life course of one individual. However, the population is only represented at time $t=0,1..,5$, and this data frame doesn't account for exact swap event times or multiple swap events that occurred between between two time steps. 
+
+# C\+\+ essentials {#cppessentials}
+
+```{r child="../man/fragments/cpp.Rmd"}
+
+```
+
+# References
+
+<div id="refs"></div>

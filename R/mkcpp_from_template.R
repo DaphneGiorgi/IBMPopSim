@@ -112,12 +112,13 @@ mkcpp_parameters <- function(parameters, parameters_t) {
                 defn_code_j <- gsub("_TYPE_", Ctype, defn_code_j)
             }
             else if (Ctype %in% c('list_of_function_x', 'list_of_function_xy', 'list_of_function')) {
+                size_j <- parameters_t$lengths[j] - 1
                 decl_code_j <- '\tstd::vector<_TYPE_> _NAME_'
                 defn_code_j <- '{'
-                for (k in 0:(length(parameters[[j]])-1)) {
+                for (k in 0:size_j) {
                     defn_code_j <- paste0(defn_code_j, 'init__TYPE_(Rcpp::as<Rcpp::Function>(Rcpp::as<Rcpp::List>(parameters["_NAME_"])[_k_]))')
                     defn_code_j <- gsub("_k_", k, defn_code_j)
-                    if (k < length(parameters[[j]])-1)
+                    if (k < size_j)
                         defn_code_j <- paste0(defn_code_j, ', ')
                 }
                 defn_code_j <- paste0(defn_code_j, '}')
@@ -155,7 +156,7 @@ mkcpp_event <- function(event, kernel_type, name_type) {
     kernel_method <- switch(kernel_type,
         "birth" = "individual newI = I;\n\tnewI.birth_date = t;\n\t_KERNEL_CODE_\n\tpop.add(newI);",
         "death" = "_KERNEL_CODE_\n\tpop.kill(k, t);",
-        "entry" = "individual newI;\n\t_KERNEL_CODE_\n\tpop.add(newI);",
+        "entry" = "individual newI;\n\t_KERNEL_CODE_\n\tnewI.entry = t;\n\tpop.add(newI);",
         "swap" = "_KERNEL_CODE_",
         "exit" = "_KERNEL_CODE_\n\tI.out = true;\n\tpop.kill(k, t);\n",
         "custom" = "_KERNEL_CODE_")

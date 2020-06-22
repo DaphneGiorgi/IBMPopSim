@@ -15,10 +15,12 @@ using std::log;
 using std::exp;
 using std::sin;
 using std::cos;
+using std::tan;
 using std::pow;
 using std::sqrt;
 using std::ceil;
 using std::floor;
+using std::abs;
 
 using Rcpp::NumericVector;
 using Rcpp::IntegerVector;
@@ -88,18 +90,19 @@ function_x import_gompertz(Rcpp::Function f) {
     Rcpp::Environment env = f.environment();
     double alpha = env["alpha"];
     double beta = env["beta"];
-    return [=](double x) { return alpha * std::exp(beta * x); };
+    double lambd = env["lambda"];
+    return [=](double x) { return alpha * std::exp(beta * x) + lambd; };
 };
 
 // ____________________________________________________________ IMPORT WEIBULL FUNCTION
 function_x import_weibull(Rcpp::Function f) {
     Rcpp::Environment env = f.environment();
-    double shape = env["shape"];
-    double scale = env["scale"];
-    return [=](double x) { return shape/scale * std::pow(x/scale,shape-1)*std::exp(-std::pow(x/scale,shape)) ; };
+    double shape = env["k"];
+    double scale = env["lambda"];
+    return [=](double x) { return (shape/scale) * std::pow(x/scale,shape-1)*std::exp(-std::pow(x/scale,shape)) ; };
 };
 
-// ____________________________________________________________ IMPORT WEIBULL FUNCTION
+// ____________________________________________________________ IMPORT NORMAL FUNCTION
 function_x import_normal(Rcpp::Function f) {
     Rcpp::Environment env = f.environment();
     double shape = env["shape"];

@@ -1,84 +1,106 @@
-check_event_type <- function(type) {
-    if (!(type %in% c("death", "birth", "entry", "exit", "swap", "custom"))) {
-        stop("The string argument 'type' must be 'death', 'birth', 'entry', 'exit', 'swap' or 'custom'")
-    }
+details_type_event <- function() {
+    "@details The \\code{type} argument is one of the following
+    \\describe{
+        \\item{\\code{'birth'}}{By default, a new individual \\code{newI} is created, with the same characteristics of the parent \\code{I} and birth date equal to the current time. Optional code can be precised in \\code{kernel_code}.}
+        \\item{\\code{'death'}}{By default, the individual \\code{I} dies. Optional code can be precised in \\code{kernel_code}.}
+        \\item{\\code{'entry'}}{A new individual \\code{newI} is added to the population, and its characteristics have to be defined by the user in the entry \\code{kernel_code}.}
+        \\item{\\code{'exit'}}{An individual \\code{I} exits from the population. Optional code can be precised in \\code{kernel_code}.}
+        \\item{\\code{'swap'}}{The user can change the caracteristics of the selected individual \\code{I}. This requires \\code{kernel_code}.}
+        \\item{\\code{'custom'}}{None of the above types, the user defines \\code{kernel_code} that can act on the selected individual \\code{I} and on the population \\code{pop}.}
+    }"
 }
 
-check_intensity_code <- function(code) {
-    if (!grepl("result", code)) {
-        stop("The string argument 'intensity_code' must contain keyword 'result'")
-    }
+details_intensity_code <- function() {
+    "@details The \\code{intensity_code} argument is a string containing some C++ code describing the event intensity for individual \\code{I} at time \\code{t}. The intensity value \\strong{must be stored} in the variable \\code{result}.
+Some of available variables in the C++ code are: \\code{t} (the current time), \\code{I} (the current individual selected for the event), the name of the model parameters (some variables, or functions, see \\code{\\link{mk_model}}).
+See \\code{vignette('IBMPopSim_Cpp')} for more details."
 }
 
-check_kernel_code <- function(code) {
-    # to do
+details_interaction_code <- function() {
+    "@details The \\code{interaction_code} argument is a string containing some C++ code describing the event interaction function $U$ at time \\code{t}. The interaction value \\strong{must be stored} in the variable \\code{result}.
+Some of available variables in the C++ code are: \\code{t} (the current time), \\code{I} (the current individual selected for the event), \\code{J} (another individual if \\code{interaction_type} is \\code{'random'}), the name of the model parameters (some variables, or functions, see \\code{\\link{mk_model}}).
+See \\code{vignette('IBMPopSim_Cpp')} for more details."
 }
 
-#' Create Poisson class event
+details_kernel_code <- function() {
+    "@details The \\code{kernel_code} argument is a string containing some C++ code which describing the action of the event. Some of available variables in the C++ code are: \\code{t} (the current time), \\code{pop} (the current population), \\code{I} (the current individual selected for the event), \\code{newI} (the new indivudal if \\code{'birth'} or \\code{'entry'} event), the name of the model parameters (some variables, or functions, see \\code{\\link{mk_model}}).
+See \\code{vignette('IBMPopSim')} for more details."
+}
+
+#' Creates Poisson class event.
 #'
-#' @param type Possible types are :
-#' \describe{
-#'   \item{birth}{By default, a new individual \emph{newI} is created, with the same caracteristics of the parent \emph{I} and birth date equal to the current time.}
-#'   \item{death}{By default, the individual \emph{I} dies.}
-#'   \item{entry}{A new individual \emph{newI} is added to the population, and its caracteristics have to be defined by the user in the entry kernel code.}
-#'   \item{exit}{An individual I exits from the population.}
-#'   \item{swap}{The user can change the caracteristics of the selected individual \emph{I}.}
-#'   \item{\emph{custom}}{None of the above types, the user defines the kernel that can act on the selected individual \emph{I} and on the population \emph{pop}.}
+#' @description The function \code{mk_event_poisson} is used to create an event with intensity of type Poisson (constant intensity which does not depend on population or time).
+#' When the event occurs, something happens in the population.
+#' The created event must be used with \code{\link{mk_model}}. 
+#' @param type Must be one of \code{'birth'}, \code{'death'}, \code{'entry'}, \code{'exit'}, \code{'swap'} or \code{'custom'}. See details.
+#' @param name _(Optional)_ If not specified, the name given to the event is its type.
+#' @param intensity String containing some constant positive value, or name of a parameter which is a constant positive value.
+#' @param kernel_code String containing some C++ code describing the event action. Optional for \code{'birth'}, \code{'death'} and \code{'exit'} events. See details.
+#'
+#' @eval details_type_event()
+#' @eval details_kernel_code()
+#' @return An S3 object of class \code{event} of type Poisson.
+#'
+#' @examples
+#' birth <- mk_event_poisson('birth', intensity = 10)
+#'
+#' \dontrun{
+#' params <- list(beta = 10)
+#' death <- mk_event_poisson('death', intensity = 'beta') # name of one parameter
+#' mk_model(events = list(birth, death), parameters = params)
 #' }
-#' @param intensity String containing some constant value or name of a parameter which is a constant value.
-#' @param kernel_code C++ code describing the kernel.
-#' @param name optional name parameter.
-#'
-#' @return Poisson event
+#' 
+#' @seealso  See also \code{\link{mk_model}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
 #'
 #' @export
-mk_event_poisson <- function(type,
-                             intensity,
-                             kernel_code = '',
-                             name = NULL) {
+mk_event_poisson <- function(type, name, intensity, kernel_code = '') {
+    assertChoice(type, c('birth', 'death', 'entry', 'exit', 'swap', 'custom'))
+    if (is.numeric(intensity))
+        assertNumeric(intensity, lower = 0, len = 1, any.missing = FALSE)
+    else if (is.character(intensity))
+        assertCharacter(intensity, pattern = "^[a-zA-Z0-9_]*$")
+    else
+        stop("Intensity must be a numerical constant or a name of a variable.")
     check_kernel_code(kernel_code)
-    event = list("type" = c("poisson", type),
-                 "name" = name,
-                 "intensity_code" = intensity,
-                 "kernel_code" = kernel_code)
+    if (missing(name)) name = type
+    assertCharacter(name, null.ok = TRUE, len = 1, pattern = "^[a-zA-Z0-9_]*$")
 
+    event = list("name" = name,
+                 "type" = c("poisson", type),
+                 "intensity_code" = as.character(intensity),
+                 "kernel_code" = kernel_code)
     event$cpp_code <- mkcpp_event(event, type, "poisson")
+
     class(event) <- "event"
     return(event)
 }
 
-#' Create inhomogeneous Poisson class event
+#' Creates inhomogeneous Poisson class event.
 #'
-#' @param type Possible types are :
-#' \describe{
-#'   \item{birth}{By default, a new individual \emph{newI} is created, with the same caracteristics of the parent \emph{I} and birth date equal to the current time.}
-#'   \item{death}{By default, the individual \emph{I} dies.}
-#'   \item{entry}{A new individual \emph{newI} is added to the population, and its caracteristics have to be defined by the user in the entry kernel code.}
-#'   \item{exit}{An individual I exits from the population.}
-#'   \item{swap}{The user can change the caracteristics of the selected individual \emph{I}.}
-#'   \item{\emph{custom}}{None of the above types, the user defines the kernel that can act on the selected individual \emph{I} and on the population \emph{pop}.}
-#' }
-#' @param intensity_code String containing some C++ code which describes the intensity and stores the intensity value into the variable \emph{result}.
-#' The available parameters for the C++ code are :
-#' \describe{
-#'   \item{k}{Index of the current individual in the population}
-#'   \item{pop}{Population}
-#'   \item{t}{Current time}
-#'   \item{I}{Current individual (equal to pop[k])}
-#' }
-#' @param kernel_code C++ code describing the kernel.
-#' @param name optional name parameter.
+#' @description The function \code{mk_event_inhomogeneous_poisson} is used to create an event with intensity type inhomogeneous Poisson (time dependent intensity which does not depend on population).
+#' When the event occurs, something happens in the population.
+#' The created event must be used with \code{\link{mk_model}}.
+#' @inheritParams mk_event_poisson
+#' @param intensity_code String containing some C++ code describing the intensity function. See details.
 #'
-#' @return Poisson event
+#' @eval details_type_event()
+#' @eval details_intensity_code()
+#' @eval details_kernel_code()
+#' @return An S3 object of class \code{event} of type inhomogeneous Poisson.
+#'
+#'@seealso \code{\link{mk_model}}, \code{\link{mk_event_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
 #'
 #' @export
-mk_event_inhomogeneous_poisson <- function(type,
-                                             intensity_code,
-                                             kernel_code = '',
-                                             name = NULL) {
+mk_event_inhomogeneous_poisson <- function(type, name, intensity_code,
+                                           kernel_code='') {
+    assertChoice(type, c('birth', 'death', 'entry', 'exit', 'swap', 'custom'))
+    check_intensity_code(intensity_code)
     check_kernel_code(kernel_code)
-    event = list("type" = c("inhomogeneous_poisson", type),
-                 "name" = name,
+    if (missing(name)) name = type
+    assertCharacter(name, null.ok = TRUE, len = 1, pattern = "^[a-zA-Z0-9_]*$")
+
+    event = list("name" = name,
+                 "type" = c("inhomogeneous_poisson", type),
                  "intensity_code" = intensity_code,
                  "kernel_code" = kernel_code)
 
@@ -87,48 +109,44 @@ mk_event_inhomogeneous_poisson <- function(type,
     return(event)
 }
 
-#' Create individual class event
+#' Creates an event with intensity of class individual.
 #'
-#' @param type Possible types are :
-#' \describe{
-#'   \item{birth}{By default, a new individual \emph{newI} is created, with the same caracteristics of the parent \emph{I} and birth date equal to the current time.}
-#'   \item{death}{By default, the individual \emph{I} dies.}
-#'   \item{entry}{A new individual \emph{newI} is added to the population, and its caracteristics have to be defined by the user in the entry kernel code.}
-#'   \item{exit}{An individual I exits from the population.}
-#'   \item{swap}{The user can change the caracteristics of the selected individual \emph{I}.}
-#'   \item{\emph{custom}}{None of the above types, the user defines the kernel that can act on the selected individual \emph{I} and on the population \emph{pop}.}
-#' }
-#' @param intensity_code String containing some C++ code which describes the intensity and stores the intensity value into the variable \emph{result}.
-#' The available parameters for the C++ code are :
-#' \describe{
-#'   \item{k}{Index of the current individual in the population}
-#'   \item{pop}{Population}
-#'   \item{t}{Current time}
-#'   \item{I}{Current individual (equal to pop[k])}
-#' }
-#' @param kernel_code C++ code describing the kernel.
-#' @param name optional name parameter.
-#' 
-#' @return Individual event
+#' @description Creates an event with intensity of class individual (without interactions). When the event occurs, something happens to an individual \code{I} in the population.
+#' The created event must be used with \code{\link{mk_model}}. 
+#'
+#' @inheritParams mk_event_inhomogeneous_poisson
+#'
+#' @eval details_type_event()
+#' @eval details_intensity_code()
+#' @eval details_kernel_code()
+#' @return An S3 object of class \code{event} of type individual.
+#'
+#' @examples
+#'params <- list("p_male"= 0.51,
+#'               "birth_rate" = stepfun(c(15,40), c(0,0.05,0)),
+#'               "death_rate" = gompertz(0.008, 0.02))
+#'
+#'death_event <- mk_event_individual(type = "death",
+#'                 name = "my_death_event",
+#'                 intensity_code = "result = death_rate(age(I,t));")
+#'
+#'birth_event <- mk_event_individual(type = "birth",
+#'                 intensity_code = "if (I.male) result = 0;
+#'                                   else result = birth_rate(age(I,t));",
+#'                 kernel_code = "newI.male = CUnif(0, 1) < p_male;")
+#'          
+#'@seealso \code{\link{mk_model}}, \code{\link{mk_event_poisson}}, \code{\link{mk_event_inhomogeneous_poisson}}, and \code{\link{mk_event_interaction}}.        
 #'
 #' @export
-mk_event_individual <- function(type,
-                                intensity_code,
-                                kernel_code = NULL,
-                                name = NULL) {
-    if (type == "death") {
-        if (!is.null(kernel_code))
-            warning("The argument 'kernel_code' is ignored for a death event")
-        kernel_code = ''
-    } else {
-        if (is.null(kernel_code)) kernel_code = ''
-    }
+mk_event_individual <- function(type, name, intensity_code, kernel_code='') {
+    assertChoice(type, c('birth', 'death', 'entry', 'exit', 'swap', 'custom'))
     check_intensity_code(intensity_code)
-    # a faire: check_intensity_bound(intensity_bound) (expression pas de ;)
     check_kernel_code(kernel_code)
+    if (missing(name)) name = type
+    assertCharacter(name, null.ok = TRUE, len = 1, pattern = "^[a-zA-Z0-9_]*$")
 
-    event = list("type" = c("individual", type),
-                 "name" = name,
+    event = list("name" = name,
+                 "type" = c("individual", type),
                  "intensity_code" = intensity_code,
                  "kernel_code" = kernel_code)
 
@@ -137,55 +155,44 @@ mk_event_individual <- function(type,
     return(event)
 }
 
-#' Create an interaction event to the model
+
+#' Creates an event with intensity of type interaction.
 #'
-#' @param type Possible types are :
-#' \describe{
-#'   \item{birth}{By default, a new individual \emph{newI} is created, with the same caracteristics of the parent \emph{I} and birth date equal to the current time.}
-#'   \item{death}{By default, the individual \emph{I} dies.}
-#'   \item{entry}{A new individual \emph{newI} is added to the population, and its caracteristics have to be defined by the user in the entry kernel code.}
-#'   \item{exit}{An individual I exits from the population.}
-#'   \item{swap}{The user can change the caracteristics of the selected individual \emph{I}.}
-#'   \item{\emph{custom}}{None of the above types, the user defines the kernel that can act on the selected individual \emph{I} and on the population \emph{pop}.}
-#' }
-#' @param interaction_type Can be full or random. The default type is full.
-#' If type is full, the intensity is the sum over all the individuals in the population of the interaction kernel; if type is random,
-#' the intensity is the interaction kernel applied to an individual randomly picked in the population.
-#' @param interaction_code C++ code describing the interaction kernel and storing its value into the variable \emph{result}.
-#' The interaction kernel is a function of the following parameters:
-#' \describe{
-#'   \item{k}{Index of the current individual in the population}
-#'   \item{pop}{Population}
-#'   \item{t}{Current time}
-#'   \item{I}{Current individual (equal to pop[k])}
-#'   \item{J}{Another individual in the population. }
-#' }
-#' @param kernel_code C++ code describing the kernel.
-#' @param name optional name parameter.
+#' @description Creates an event whose intensity depends on an individual and interactions with the population. When the event occurs, something happens to an individual \code{I} in the population. The intensity of the event can depend on time, the characteristics of I and other individuals in the population, and can be written as
+#' \deqn{d(I,t,pop) = \sum_{J \in pop} U(I,J,t),}
+#' where \eqn{U} is called the interaction function.
+#' The created event must be used with \code{\link{mk_model}}. 
 #'
-#' @return The original model with the added event.
+#' @inheritParams mk_event_inhomogeneous_poisson
+#' @param interaction_code String containing some C++ code describing the interaction function. See details.
+#' @param interaction_type _(Optional)_ Either \code{'random'} or \code{'full'}. By default \code{'random'} which is faster than \code{'full'}.
+#'
+#' @eval details_type_event()
+#' @eval details_interaction_code()
+#' @eval details_kernel_code()
+#' @return An S3 object of class \code{event} of type interaction.
+#'
+#'
+#'@examples 
+#'
+#'death_interaction_code<- " result = max(J.size -I.size,0);"
+#'event <- mk_event_interaction(type="death", 
+#'                              interaction_code = death_interaction_code)
+#'
+#'@seealso \code{\link{mk_model}}, \code{\link{mk_event_poisson}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}.
 #'
 #' @export
-mk_event_interaction <- function(type,
-                                 interaction_type,
-                                 interaction_code,
-                                 kernel_code = NULL,
-                                 name = NULL) {
-    if (type == "death") {
-        if (!is.null(kernel_code))
-            warning("The argument 'kernel_code' is ignored for a death event")
-        kernel_code = ''
-    } else {
-        if (is.null(kernel_code)) kernel_code = ''
-    }
-    if (!(interaction_type %in% c("full", "random"))) {
-        stop("The string argument 'interaction_type' must be 'full' or 'random'")
-    }
-
+mk_event_interaction <- function(type, name, interaction_code, kernel_code='',
+                                 interaction_type = 'random') {
+    assertChoice(type, c('birth', 'death', 'entry', 'exit', 'swap', 'custom'))
+    assertChoice(interaction_type, c('random', 'full'))
+    check_interaction_code(interaction_code)
     check_kernel_code(kernel_code)
+    if (missing(name)) name = type
+    assertCharacter(name, null.ok = TRUE, len = 1, pattern = "^[a-zA-Z0-9_]*$")
 
-    event = list("type" = c("interaction", type),
-                 "name" = name,
+    event = list("name" = name,
+                 "type" = c("interaction", type),
                  "intensity_type" = interaction_type,
                  "intensity_code" = interaction_code,
                  "kernel_code" = kernel_code)
@@ -195,10 +202,10 @@ mk_event_interaction <- function(type,
     return(event)
 }
 
-#' Summary of an event
+#' Summary of an event.
 #'
-#' @param object argument of class 'event'
-#' @param ... additional arguments affecting the summary produced.
+#' @param object Argument of class \code{event}.
+#' @param ... Additional arguments affecting the summary produced.
 #'
 #' @export
 summary.event <- function(object, ...) {
@@ -208,5 +215,22 @@ summary.event <- function(object, ...) {
         sprintf("%s, type: %s", object$type[1], object$type[2]),
         if (is.null(object$name)) sprintf("\n") else sprintf(", name: %s\n", object$name)
     )
+}
+
+check_intensity_code <- function(code) {
+    if (!grepl("result", code)) {
+        stop("The string argument 'intensity_code' must contain keyword 'result'")
+    }
+}
+
+check_interaction_code <- function(code) {
+  if (!grepl("result", code)) {
+    stop("The string argument 'interaction_code' must contain keyword 'result'")
+  }
+    # to do
+}
+
+check_kernel_code <- function(code) {
+    # to do
 }
 

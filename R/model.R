@@ -1,106 +1,124 @@
-#' Get names and C types of the characteristics of the individuals in a population
+#' Returns names and C types of the characteristics.
 #'
-#' @param population Data frame representing the population, two columns must be 'birth' for the birth date and 'death' for the death date (eventually NA)
+#' @description  Returns names and C types of the characteristics of the individuals in a population, from a population data frame.
 #'
-#' @return List of names of characteristics associated with their and C types which describe an individual
+#' @param population Population data frame: characteristics in columns and individuals in rows. At least two columns \code{birth} (dates of birth) and \code{death} (dates of death) are required.
+#' @return Named vector composed of characteristics names and C types.
+#'
+#' @examples
+#' get_characteristics(EW_pop_14$sample)
 #'
 #' @export
 get_characteristics <- function(population) {
-    nams <- names(population)
-    if (length(intersect(nams, c('birth', 'death'))) < 2) {
-        stop("Argument population must have 'birth' and 'death' columns")
+    assertPopulation(population)
+    chis <- setdiff(names(population), c('birth', 'death'))
+    if (length(chis) > 0) {
+        result <- sapply(subset(population, select=chis), function(t) {
+                             switch(typeof(t),
+                                    "logical" = "bool",
+                                    "integer" = "int",
+                                    "numeric" = "double",
+                                    "double" = "double",
+                                    "character" = "char",
+                                    stop("Type of a characteristic must be 'logical' or 'numeric' or 'double' or 'integer' or character'")
+                             )})
+        return(result)
+    } else {
+        return(NULL)
     }
-    chars <- setdiff(nams, c('birth', 'death'))
-    characteristics <- list()
-    if (length(chars) > 0) {
-        typC <- sapply(subset(population, select=chars), function(t) {
-                           switch(typeof(t),
-                                  "logical" = "bool",
-                                  "integer" = "int",
-                                  "numeric" = "double",
-                                  "double" = "double",
-                                  "character" = "char",
-                                  stop("Type of a characteristic must be 'logical' or 'numeric' or 'double' or 'integer' or character'")
-                           )
-        })
-        characteristics <- as.list(typC)
-    }
-    return(characteristics)
 }
 
-#' Create a model
+#' Creates a model for IBMPopSim.
 #'
-#' This function creates a model describing the population, the events which can occur in the population,
-#' the available parameters.
-#' It builds the C++ code using the code given in the events and produces the function `popsim_cpp`
-#' which will be used for simulating a population
+#' @description  This function creates an Individual Based Model describing the population, events which can occur in the population, and the model parameters.
 #'
-#' @param characteristics List containing names and types of characteristics of initial population
-#' @param events List of events in the model
-#' @param parameters R parameters available from cpp
+#' @param characteristics List containing names and types of characteristics of individuals in the population. See \code{\link{get_characteristics}}.
+#' @param events List of events in the model. See \code{\link{mk_event_poisson}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, and \code{\link{mk_event_interaction}}.
+#' @param parameters Model parameters. A list of parameters of the model.
+#' @param with_id _(Optional)_ Logical argument, \code{FALSE} by default. If \code{TRUE}, each individuals is given a unique \code{id}, which allows the identification of individual life histories in the presence of swap events.
+#' @param with_compilation _(Optional)_ Logical parameter, \code{TRUE} by default. If \code{FALSE} the \code{sourceCpp} function is not called.
+#'
+#' @details It builds the C++ model code and produces the function \code{popsim_cpp} which will be used for simulating the model. The function used to simulate a population from a model is \code{\link{popsim}}.
 #'
 #' @return model List containing the built model :
 #' \itemize{
-#'   \item individual_type: Names and types (R and C++) of an individual in the population
-#'   \item parameters_types: Names and types (R and C++) of model parameters and functions
-#'   \item parameters: Parameters, if there is a swap event in the list of events, it adds a column `id`
-#'   \item events: List of events
-#'   \item cpp: Output of C++ compilation
-#'   \item popsim_cpp: Function for simulating the population resulting from the build process, which is called inside the R function `popsim``
+#'   \item \code{individual_type}: Names and types (R and C++) of characteristics.
+#'   \item \code{parameters_types}: Names and types (R and C++) of model parameters.
+#'   \item \code{events}: List of events.
+#'   \item \code{cpp_code}: Output of C++ compilation.
 #' }
 #'
+#' @examples
+#'\dontrun{
+#'params <- list("p_male"= 0.51,
+#'               "birth_rate" = stepfun(c(15,40),c(0,0.05,0)),
+#'               "death_rate" = gompertz(0.008,0.02))
+#'
+#'death_event <- mk_event_individual(type = "death",
+#'                                   intensity_code = "result = death_rate(age(I,t));")
+#'
+#'birth_event <- mk_event_individual(type = 'birth',
+#'                                   intensity_code = "if (I.male) result = 0;
+#'                                     else result=birth_rate(age(I,t));",
+#'                                   kernel_code = "newI.male = CUnif(0, 1) < p_male;")
+#'
+#'model <- mk_model(characteristics = get_characteristics(population_df),
+#'                  events = list(death_event,birth_event),
+#'                  parameters = params)
+#'
+#'summary(model)
+#'}
+#'
+#'@seealso \code{\link{popsim}}, \code{\link{mk_event_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
 #'
 #' @export
 mk_model <- function(characteristics = NULL,
                      events,
                      parameters = NULL,
+                     with_id = FALSE,
                      with_compilation = TRUE) {
-    # population,
-    #                  events,
-    #                  parameters,
-    #                  characteristics=NULL,
-    #                  parameters_types=NULL) {
-    # if (missing(population) && is.null(characteristics))
-    #     stop("argument 'population' or 'characteristics' is missing")
-    # if (missing(parameters) && is.null(parameters_types)) {
-    #     warning("model without parameters")
-    # } else {
-    #     if (is.null(parameters_types)) {
-    #         parameters_types = mk_parameters_types(parameters)
-    #     }
-    #     else parameters_types = parameters_types
-    # }
-    # if (is.null(individual_type))
-    #     individual_type = mk_individual_type(population)
-
-    individual_type = mk_individual_type(characteristics)
+    assertCharacteristics(characteristics)
+    individual_type <- mk_individual_type(characteristics)
+    assertList(events, types = 'event', min.len = 1, unique = TRUE,
+               null.ok = FALSE, any.missing = FALSE)
+    name_events <- sapply(events, function(e) { e$name })
+    assertCharacter(name_events, unique = TRUE, null.ok = FALSE,
+                    any.missing = FALSE, pattern = "^[a-zA-Z0-9_]*$")
     if (missing(parameters)) {
         warning("model without parameters")
-        parameters_types = NULL #list(names=NULL, typesR=NULL, typesC=NULL)
+        parameters_types = NULL
     } else {
+        assertParameters(parameters)
         parameters_types = mk_parameters_types(parameters)
     }
+    assertFlag(with_id)
+    assertFlag(with_compilation)
 
-    with_id = (!is.null(parameters$with_id) && parameters$with_id)
-    with_swap = FALSE
-    for (k  in 1:length(events)) {
-        with_swap = with_swap | ("swap" %in% events[[k]])
-    }
-    if (with_swap && !with_id) {
-        warning("with_id is forced to TRUE by presence of swap event")
-    }
-    with_id = with_swap | with_id
-    if (with_id && (!'id' %in% individual_type$names)) {
-        warning("add 'id' as individual attributes")
+    if (with_id) {
+        print("add 'id' as individual attributes")
         n = length(individual_type$names) + 1
         individual_type$names[[n]] = 'id'
         individual_type$typesR[[n]] = 'integer'
         individual_type$typesC[[n]] = 'int'
     }
+    if (has_event_type(events, 'entry')) {
+        print("entry event: add 'entry' as individual attributes")
+        n = length(individual_type$names) + 1
+        individual_type$names[[n]] = 'entry'
+        individual_type$typesR[[n]] = 'double'
+        individual_type$typesC[[n]] = 'double'
+    }
+    if (has_event_type(events, 'exit')) {
+        print("exit event: add 'out' as individual attributes")
+        n = length(individual_type$names) + 1
+        individual_type$names[[n]] = 'out'
+        individual_type$typesR[[n]] = 'logical'
+        individual_type$typesC[[n]] = 'bool'
+    }
+
 
     model <-  list("individual_type" = individual_type,
                    "parameters_types" = parameters_types,
-                   "parameters" = parameters,
                    "events" = events)
 
     model$cpp_code <- mkcpp_popsim(model, with_id)
@@ -112,9 +130,9 @@ mk_model <- function(characteristics = NULL,
     return(model)
 }
 
-#' Summary of a model
+#' Summary of a model.
 #'
-#' @param object argument of class 'model'
+#' @param object argument of class \code{model}
 #' @param ... additional arguments affecting the summary produced.
 #'
 #' @export
@@ -189,7 +207,9 @@ get_Ctype <- function(x) {
             typ_fun <- setdiff(class(x), 'function')
             typC <- switch(typ_fun,
                            "stepfun" = "function_x",
+                           "linfun" = "function_x",
                            "weibull" = "function_x",
+                           "gompertz" = "function_x",
                            "piecewise_x" = "function_x",
                            "piecewise_xy" = "function_xy")
         }
@@ -226,6 +246,14 @@ mk_parameters_types <- function(parameters) {
     typC <- sapply(parameters, get_Ctype)
     list("names" = nam,
          "typesR" = as.vector(typR),
-         "typesC" = as.vector(typC))
+         "typesC" = as.vector(typC),
+         "lengths" = sapply(parameters, length))
 }
 
+has_event_type <- function(events, str) {
+    b = FALSE
+    for (ev in events) {
+        b = b | (str %in% ev$type)
+    }
+    return(b)
+}

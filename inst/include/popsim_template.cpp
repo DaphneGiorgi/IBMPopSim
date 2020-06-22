@@ -34,8 +34,26 @@ _DECLARATION_PARAMETERS_
     double Norm(Args&&... arg) { return std::normal_distribution<double>(std::forward<Args>(arg)...)(__gen); }
 #define CNorm cntxt.Norm
     template<typename ... Args>
+    double Poisson(Args&&... arg) { return std::poisson_distribution<double>(std::forward<Args>(arg)...)(__gen); }
+#define CPoisson cntxt.Poisson
+    template<typename ... Args>
+    double Gamma(Args&&... arg) { return std::gamma_distribution<double>(std::forward<Args>(arg)...)(__gen); }
+#define CGamma cntxt.Gamma
+    template<typename ... Args>
+    double Weibull(Args&&... arg) { return std::weibull_distribution<double>(std::forward<Args>(arg)...)(__gen); }
+#define CWeibull cntxt.Weibull
+    template<typename ... Args>
+    int UnifInt(Args&&... arg) { return std::uniform_int_distribution<int>(std::forward<Args>(arg)...)(__gen); }
+#define CUnifInt  cntxt.UnifInt
+    template<typename ... Args>
     unsigned Discrete(Args&&... arg) { return std::discrete_distribution<int>(std::forward<Args>(arg)...)(__gen); }
 #define CDiscrete  cntxt.Discrete
+    template<typename ... Args>
+    bool Bernoulli(Args&&... arg) { return std::bernoulli_distribution(std::forward<Args>(arg)...)(__gen); }
+#define CBern  cntxt.Bernoulli
+    template<typename ... Args>
+    unsigned Binomial(Args&&... arg) { return std::binomial_distribution<int>(std::forward<Args>(arg)...)(__gen); }
+#define CBinom  cntxt.Binomial
 };
 // *****
 
@@ -83,7 +101,8 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
     std::vector<double> intensity_bound = Rcpp::as<std::vector<double>>(events_bounds);
     population pop(age_max);
 
-    Rcpp::Rcout << "Simulation on the interval [" << T0 << ", " << T << "] " << std::endl;
+    if (verbose)
+        Rcpp::Rcout << "Simulation on the interval [" << T0 << ", " << T << "] " << std::endl;
     if (multithreading) {
 #ifdef __INTERACTION
         Rcpp::Rcout << "Warning: Multithreading should be deactivated..." << std::endl;
@@ -165,14 +184,11 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
     elapsed_seconds = end-start;
     double secs_finalize = elapsed_seconds.count();
 
-    Rcpp::List logs = Rcpp::List::create(
+    Rcpp::NumericVector logs = Rcpp::NumericVector::create(
             Rcpp::Named("proposed_events")= C.proposedEvents,
             Rcpp::Named("effective_events")= C.effectiveEvents,
             Rcpp::Named("cleanall_counter")= C.cleanAll,
-            Rcpp::Named("duration_initialization")=secs_initialize,
-            Rcpp::Named("duration_main_algorithm")=secs_main_algorithm,
-            Rcpp::Named("duration_finalization")=secs_finalize);
-
+            Rcpp::Named("duration_main_algorithm")=secs_main_algorithm);
     // Returns population and simulation info
     Rcpp::List L = Rcpp::List::create(
             Rcpp::Named("population") = new_pop_df,

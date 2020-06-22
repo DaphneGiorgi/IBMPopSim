@@ -1,35 +1,66 @@
-#' England and Wales human population for year 2014.
+#' England and Wales (EW) 2014 population, death and birth rates.
+#'
+#' @description EW 2014 population and death rates by age  and gender  (Source: Office for National Statistics, reference number 006518).
+#'
+#' Female birth rates by age of the mother (Source: Office for National Statistics birth summary tables).
 #'
 #' @format A list containing:
 #' \describe{
-#'   \item{age_pyramid}{Data frame containing the aggregated human population of England and Wales for year 2014, by age and sex.}
-#'   \item{rates}{Data frame containing birth rates, death rates for males and death rates for females.}
-#'   \item{sample}{Data frame containing a population of size $10^5$ sampled from `age_pyramid`.}
+#'   \item{\code{age_pyramid}}{Data frame containing EW age pyramid for year 2014, by gender and single year of age (0-115).}
+#'   \item{\code{rates}}{A list containing three data frames:\describe{
+#'                \item{\code{birth}}{Birth rates data frame, by age of mother and 5 years age groups.}
+#'                \item{\code{death_male}}{Male death rates data frame, by single year of age (0-90+).}
+#'                \item{\code{death_female}}{Female death rates dataframe, by single year of age (0-90+).}}}
+#'   \item{\code{sample}}{Population dataframe composed of 100 000 individuals, sampled from \code{age_pyramid}.}
 #' }
 "EW_pop_14"
 
-
-#' England and Wales human population with IMD for year 2014.
+#' England and Wales (EW) 2014 population and death rates by Index of Multiple Deprivation (IMD).
+#'
+#' @description EW population, death rates by age, gender and IMD for year 2014 (Source: Office for National Statistics, reference number 006518).
 #'
 #' @format A list containing:
 #' \describe{
-#'   \item{age_pyramid}{Data frame containing the human population of England and Wales for year 2014, by age, sex and IMD.}
-#'   \item{rates}{List containing 4 fields:
+#'   \item{\code{age_pyramid}}{Data frame containing EW age pyramid for year 2014, by gender, IMD and single year of age (0-115).
+#'
+#'   Individuals in the age class 90+ are distributed in the single year of age classes as in the EW population.}
+#'   \item{\code{death_rates}}{List containing 4 fields:
 #'       \itemize{
-#'         \item birth_params: List of 3 parameters (alpha, beta, TFR_weights) for creating the birth rates.
-#'         \item death_male: Data frame of death rates for males by IMD.
-#'         \item death_female: Data frame of death rates for females by IMD.
-#'         \item swap: List of 3 parameters (ages, intensities and distribution) for creating the swap intensities.
+#'         \item{\code{male}}{ Male death rates data frame, by IMD and single year of age (0-90+).}
+#'         \item{\code{female}}{ Female death rates dataframe, by IMD and single year of age (0-90+).}
 #'       }
 #'   }
-#'   \item{sample}{Data frame containing a population of size $10^5$ sampled from `age_pyramid`.}
+#'   \item{\code{sample}}{Population dataframe composed of 100 000 individuals, sampled from \code{age_pyramid}.}
 #' }
 "EW_popIMD_14"
 
 
-#' England and Wales human population output after simulation.
+#' Example of "human population" after 100 years of simulation.
 #'
-#' @format Data frame containing a human population of England and Wales by age and sex,
-#' simulated with an initial population of size $10^5$ sampled from `EW_pop_14$age_pyramid`
-#' over 100 years.
+#' @description   Example of "human population"  data frame after 100 years of simulation, based on a sample of England and Wales 2014 population and demographic rates.
+#'
+#' @format Data frame containing a population structured by age and gender,
+#' simulated with an initial population of 100 000 individuals sampled from \code{EW_pop_14$age_pyramid}
+#' over 100 years, with birth and death events.
 "EW_pop_out"
+
+
+
+
+#' Toy parameters for IBMPopSim-human_popIMD vignette example.
+#'
+#' @format A list containing:
+#' \describe{
+#'   \item{\code{birth}}{A list of 3 numeric vectors  (\code{alpha}, \code{beta}, \code{TFR_weights}) for creating birth intensity with the Weibull probability density function.}
+#'   \item{\code{swap}}{A List of one numeric vector and two data frames  (\code{ages}, \code{intensities} and \code{distribution}) for creating the swap intensity and kernel functions.}
+#' }
+"toy_params"
+
+
+
+#' England and Wale mortality data (source: Human Mortality Database)
+#'
+#' @description  Obtained with 
+#' 
+#' \code{EWdata_hmd <- hmd.mx(country = "GBRTENW", username = ... , password = ...,label = "England and Wales")}
+"EWdata_hmd"

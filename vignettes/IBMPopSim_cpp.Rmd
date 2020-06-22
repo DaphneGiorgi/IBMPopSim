@@ -1,0 +1,38 @@
+---
+title: "IBMPopSim C++ essentials"
+author: "Daphné Giorgi, Sarah Kaakai, Vincent Lemaire"
+pkgdown:
+  as_is: true
+output:
+  bookdown::html_document2:
+    toc: yes
+    toc_depth: 3
+    number_sections: no
+  bookdown::pdf_document2:
+    toc: yes
+    toc_depth: 3
+    number_sections: no
+package: IBMPopSim
+vignette: >
+  %\VignetteIndexEntry{IBMPopSim C++ essentials}
+  %\VignetteEncoding{UTF-8}
+  \usepackage[utf8]{inputenc}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+```{r knitr_opts, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  fig.align = "center",
+  collapse = TRUE
+)
+```
+
+```{r init, include=FALSE}
+library(IBMPopSim)
+library(dplyr)
+library(purrr)
+```
+
+```{r child="../man/fragments/cpp.Rmd"}
+```
+

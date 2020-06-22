@@ -3,7 +3,7 @@
 
 class population {
 	public:
-        population() = default;
+    population() = default;
 		population(double a_max) : nAlive(0), nDead(0), a_max(a_max) { }
 
 		individual operator[](unsigned k) const { return individuals[k]; }
@@ -14,10 +14,10 @@ class population {
 		unsigned pick_alive(double t, context & omeg) const;
 		unsigned pick_potentially_alive(double t, context & omeg) const;
 
-        void add_init(individual const & ind);
+    void add_init(individual const & ind);
 		void add(individual const & ind);
 
-        void kill(unsigned int k, double t, bool moveToCemetery = false);
+    void kill(unsigned int k, double t, bool moveToCemetery = false);
 		/* void cleanDead(); */
 		/* void cleanTooOld(double t); */
 		void cleanAll(double t);
@@ -26,7 +26,7 @@ class population {
 		unsigned nDead;
 		double a_max;
 
-        void set_individuals(std::vector<individual> const & v) {
+    void set_individuals(std::vector<individual> const & v) {
 			individuals = v;
 			nAlive = v.size();
 		}
