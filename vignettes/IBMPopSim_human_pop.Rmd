@@ -29,6 +29,7 @@ knitr::opts_chunk$set(
 
 ```{r setup, include=FALSE}
 library(IBMPopSim)
+library(scales)
 library(ggfortify)
 library(gridExtra)
 ```
