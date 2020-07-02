@@ -13,8 +13,5 @@ src/*.dll
 **/.ipynb_checkpoints
 **/code_model.cpp
 
-man/
-NAMESPACE
-
 vignettes/*.R
 vignettes/*.html

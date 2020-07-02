@@ -1,0 +1,50 @@
+---
+title: "installation"
+output: html_document
+---
+
+The latest stable version can be installed from CRAN:
+
+``` r
+install.packages('IBMPopSim')
+```
+
+The latest development version can be installed from github:
+
+``` r
+# install.packages("devtools")
+devtools::install_github('giorgi/IBMPopSim')
+```
+
+### First example to check installation 
+
+To illustrate the use of the package and to check the installation, a simple model with Poisson arrivals and exits is implemented. 
+
+```{r syntax_model, message = FALSE}
+library(IBMPopSim)
+
+init_size <- 100000
+pop <- data.frame(birth = rep(0, init_size), death = NA)
+
+birth = mk_event_poisson(type = 'birth', intensity = 'lambda')
+death = mk_event_poisson(type = 'death', intensity = 'mu')
+params = list('lambda' = 100, 'mu' = 100)
+
+# mk_model compiles C++ code using sourceCpp from Rcpp
+birth_death <- mk_model(events = list(birth, death),
+                        parameters = params)
+```
+
+If there are no errors then the C++ built environment is compatible with the package. The model is created and a C++ code has been compiled. The simulation is done using the `popsim` function.  
+
+```{r syntax_simu, message = FALSE}
+sim_out <- popsim(model = birth_death, 
+                  population = pop, 
+                  events_bounds = c('birth' = params$lambda, 'death' = params$mu),
+                  parameters = params, 
+                  time = 10)
+
+num_births <- length(sim_out$population$birth) - init_size
+num_deaths <- sum(!is.na(sim_out$population$death))
+print(c("births" = num_births, "deaths" = num_deaths))
+```
