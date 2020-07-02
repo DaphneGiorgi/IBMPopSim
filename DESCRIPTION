@@ -29,6 +29,7 @@ Suggests: RcppArmadillo, knitr, rmarkdown, ggfortify, magick,
 LazyData: true
 SystemRequirements: C++11
 NeedsCompilation: no
+VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
 Encoding: UTF-8
