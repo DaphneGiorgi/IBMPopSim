@@ -23,7 +23,7 @@
 #' }
 #'
 #'@examples
-#'\dontrun{
+#'\donttest{
 #'init_size <- 100000
 #'pop <- data.frame(birth = rep(0, init_size), death = NA)
 #'

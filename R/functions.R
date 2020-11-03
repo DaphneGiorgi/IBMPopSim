@@ -5,7 +5,7 @@ details_cpp <- function() {
 #' Step Function.
 #'
 #' @description Given the vectors `(x[1],...,x[n])` and `(y[0],y[1],...,y[n])` (one value more!), `stepfun(x, y)` returns an interpolating step function, say `f_n`. This is the cadlag version (`right = FALSE`) of the `stepfun` function from package `stats`. The step function value `f_n(t)` equals to the constant `y[k-1]` for `t` in `[x[k-1], x[k])` so that
-#' \deqn{f_n(t) = \sum_{k=1}^{n+1} y_{k-1} \mathbb{1}_{[x_{k-1}, x_{k})}(t),}
+#' \deqn{f_n(t) = \sum_{k=1}^{n+1} y_{k-1} {1}_{[x_{k-1}, x_{k})}(t),}
 #' with\eqn{x_0=-\infty} and \eqn{x_{n+1}=+\infty}.
 #'
 #' @param x Numeric vector giving the knots or jump locations of the step function. Must be sorted with unique values.
@@ -56,7 +56,7 @@ linfun <- function(x, y, yleft = y[1], yright = y[length(y)]) {
 #'
 #' @description The intensity function (or hazard function) for the Gompertz-Makeham law of mortality distribution is defined as
 #' \deqn{h(x) = \alpha e^{\beta x} + \lambda}
-#' with \eqn{\alpha, \beta, \lambda \in \mathbb{R}_+}.
+#' with \eqn{\alpha, \beta, \lambda \in {R}_+}.
 #'
 #' @param alpha Non-negative real parameter.
 #' @param beta Non-negative real parameter.
@@ -110,7 +110,7 @@ weibull <- function(k, lambda = 1) {
 #' @description Given the vectors `(breaks[1],...,breaks[n])` and the list of `IBMPopSim` compatible
 #' functions `funs = (f[0],f[1],...,f[n])` (one value more!), `piecewise_x(breaks, funs)` returns
 #' the function
-#' \deqn{f(x) = f_0(x)\mathbb{1}_{x\le breaks[1]}+\sum_{k=1}^{n-1} f_k(x) \mathbb{1}_{[breaks_{k}, breaks_{k+1})}(x) + f_n(x)\mathbb{1}_{x \ge breaks[n]}}
+#' \deqn{f(x) = f_0(x){1}_{x\le breaks[1]}+\sum_{k=1}^{n-1} f_k(x) {1}_{[breaks_{k}, breaks_{k+1})}(x) + f_n(x){1}_{x \ge breaks[n]}}
 #'
 #'
 #' @param breaks Numeric vector giving the breaks of functions given in \code{funs}. Must be sorted with unique values.
@@ -149,7 +149,7 @@ piecewise_x <- function(breaks, funs) {
 #' @description Given the vectors `(breaks[1],...,breaks[n])` and the list of `IBMPopSim` compatible
 #' functions `funs = (f[0],f[1],...,f[n])` (one value more!), `piecewise_xy(breaks, funs)` returns
 #' the function
-#' \deqn{f(x,y) = f_0(x) \mathbb{1}_{y\le breaks[1]}+\sum_{k=1}^{n-1} f_k(x) \mathbb{1}_{[breaks_{k}, breaks_{k+1})}(y) + f_n(x)\mathbb{1}_{y \ge breaks[n]}}
+#' \deqn{f(x,y) = f_0(x) {1}_{y\le breaks[1]}+\sum_{k=1}^{n-1} f_k(x) {1}_{[breaks_{k}, breaks_{k+1})}(y) + f_n(x){1}_{y \ge breaks[n]}}
 #'
 #' @param breaks Numeric vector giving the breaks of functions given in \code{funs}. Must be sorted with unique values.
 #' @param funs List of functions.

@@ -40,7 +40,7 @@ See \code{vignette('IBMPopSim')} for more details.
 \examples{
 birth <- mk_event_poisson('birth', intensity = 10)
 
-\dontrun{
+\donttest{
 params <- list(beta = 10)
 death <- mk_event_poisson('death', intensity = 'beta') # name of one parameter
 mk_model(events = list(birth, death), parameters = params)

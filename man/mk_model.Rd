@@ -39,7 +39,7 @@ This function creates an Individual Based Model describing the population, event
 It builds the C++ model code and produces the function \code{popsim_cpp} which will be used for simulating the model. The function used to simulate a population from a model is \code{\link{popsim}}.
 }
 \examples{
-\dontrun{
+\donttest{
 params <- list("p_male"= 0.51,
               "birth_rate" = stepfun(c(15,40),c(0,0.05,0)),
               "death_rate" = gompertz(0.008,0.02))

@@ -34,7 +34,7 @@ _DECLARATION_PARAMETERS_
     double Norm(Args&&... arg) { return std::normal_distribution<double>(std::forward<Args>(arg)...)(__gen); }
 #define CNorm cntxt.Norm
     template<typename ... Args>
-    double Poisson(Args&&... arg) { return std::poisson_distribution<double>(std::forward<Args>(arg)...)(__gen); }
+    unsigned Poisson(Args&&... arg) { return std::poisson_distribution<>(std::forward<Args>(arg)...)(__gen); }
 #define CPoisson cntxt.Poisson
     template<typename ... Args>
     double Gamma(Args&&... arg) { return std::gamma_distribution<double>(std::forward<Args>(arg)...)(__gen); }

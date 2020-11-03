@@ -15,9 +15,25 @@ vignette: >
   \usepackage[utf8]{inputenc}
   %\VignetteEngine{knitr::rmarkdown}
 ---
+```{r knitr_opts, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.align = "center",
+  collapse = TRUE,
+  dev = c('pdf', 'png'),
+  fig.width = 7,
+  fig.height = 5,
+  dpi = 150
+)
+```
 
-
-
+```{r setup, include=FALSE}
+library(IBMPopSim)
+library(colorspace)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+```
 
 <!-- #region -->
 This vignette provides an example  of usage of the package IBMPopSim, for simulating an heterogeneous "human population" in which individuals can change of characteristics over their life course.  As this a more advance example of IBM simulation with `IBMPopSim`, it is recommended to start by reading the package vignettes `vignette('IBMPopSim')` and `vignette('IBMPopSim_human_pop')`.
@@ -42,41 +58,12 @@ Individuals inherit the same IMD than their parent at birth, but can change of I
 The initial population is a 100 000 individuals population sampled from England and Wales' 2014 age pyramid, structured by single year of age, gender and IMD quintile (source: Office for National Statistics).
 <!-- #endregion -->
 
-
-```r
+```{r}
 str(EW_popIMD_14)
-## List of 3
-##  $ age_pyramid:'data.frame':	1160 obs. of  4 variables:
-##   ..$ age  : Factor w/ 116 levels "0 - 1","1 - 2",..: 1 1 1 1 1 1 1 1 1 1 ...
-##   ..$ IMD  : int [1:1160] 1 2 3 4 5 1 2 3 4 5 ...
-##   ..$ male : logi [1:1160] FALSE FALSE FALSE FALSE FALSE TRUE ...
-##   ..$ value: num [1:1160] 49114 54293 61541 73289 85626 ...
-##  $ death_rates:List of 2
-##   ..$ male  :'data.frame':	455 obs. of  3 variables:
-##   .. ..$ age  : int [1:455] 0 1 2 3 4 5 6 7 8 9 ...
-##   .. ..$ IMD  : num [1:455] 1 1 1 1 1 1 1 1 1 1 ...
-##   .. ..$ value: num [1:455] 2.59e-03 3.13e-04 1.02e-04 1.65e-05 1.46e-04 ...
-##   ..$ female:'data.frame':	455 obs. of  3 variables:
-##   .. ..$ age  : int [1:455] 0 1 2 3 4 5 6 7 8 9 ...
-##   .. ..$ IMD  : num [1:455] 1 1 1 1 1 1 1 1 1 1 ...
-##   .. ..$ value: num [1:455] 2.87e-03 2.52e-04 1.43e-04 8.73e-05 1.20e-04 ...
-##  $ sample     :'data.frame':	100000 obs. of  4 variables:
-##   ..$ birth: num [1:100000] -0.0917 -0.6313 -0.5008 -0.4568 -0.6978 ...
-##   ..$ death: num [1:100000] NA NA NA NA NA NA NA NA NA NA ...
-##   ..$ male : logi [1:100000] FALSE TRUE TRUE FALSE TRUE FALSE ...
-##   ..$ IMD  : int [1:100000] 5 2 5 4 3 4 2 1 5 4 ...
 ```
 
-
-```r
+```{r}
 head(EW_popIMD_14$sample)
-##         birth death  male IMD
-## 1 -0.09170591    NA FALSE   5
-## 2 -0.63126956    NA  TRUE   2
-## 3 -0.50078693    NA  TRUE   5
-## 4 -0.45684987    NA FALSE   4
-## 5 -0.69782311    NA  TRUE   3
-## 6 -0.04470658    NA FALSE   4
 ```
 
 <!-- #region -->
@@ -107,14 +94,9 @@ Death intensities are based on EW 2014 age specific death rates by gender and IM
 
 Death rates are lower in less deprived quintiles.
 
-
-```r
+```{r, hpIMD_death_rate}
 ggplot(EW_popIMD_14$death_rates$male, aes(x=age,y=log(value),color=factor(IMD)))+
 geom_step()+scale_color_discrete(name="IMD quintile")+ylab("Males log death rates")
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_death_rate-1.pdf")
 ```
 
 **Step functions creation**
@@ -123,8 +105,7 @@ The death intensity functions for each IMD and gender are defined as parameters 
 
 These parameters will be transformed during the model creation into a vector of C++ step functions (starting from index 0).
 
-
-```r
+```{r}
 params_death = with(EW_popIMD_14$death_rates,
     list(
         "death_male"=lapply(1:5, function(i) stepfun(x= subset(male, IMD==i)[,"age"],
@@ -136,8 +117,7 @@ params_death = with(EW_popIMD_14$death_rates,
 ```
 
 C++ code chunk implementing the intensity of a death event:
-
-```r
+```{r}
 intensity_code_death <- '
     if (I.male)
         result = death_male[(I.IMD-1)](age(I,t));
@@ -150,8 +130,7 @@ intensity_code_death <- '
 **Creation of the event**
 
 By default, the name of the event is "death".
-
-```r
+```{r}
 death_event <- mk_event_individual(
     type = "death",
     intensity_code = intensity_code_death
@@ -180,8 +159,7 @@ We consider that women in the IMD subgroup 1 and 2 (resp. 4 and 5) have the same
 
 Example of parameters values are available in `toy_params$birth`.
 
-
-```r
+```{r}
 # birth_sex_ratio = 1.05
 params_birth <- with(toy_params$birth,
     list(
@@ -196,8 +174,7 @@ params_birth <- with(toy_params$birth,
 )
 ```
 
-
-```r
+```{r, hpIMD_birth_intensities}
 plot(x=0:50,
 	y=params_birth$TFR_weight[[1]]*params_birth$birth[[1]](0:50-params_birth$a_mean),
 	type="l", xlab="age", ylab="birth intensity", col="green", ylim=c(0,0.16),
@@ -211,10 +188,7 @@ lines(x=0:50,
 legend("topright",col=c("green","red","blue"),
 	legend=c("IMD 1 and 2", "IMD 3", "IMD 4 and 5"),
 	bty="n",lwd="2")
-```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_birth_intensities-1.pdf")
 ```
 
 ### Event creation
@@ -222,8 +196,7 @@ knitr::include_graphics("hpIMD_birth_intensities-1.pdf")
 
 C++ code implementing the intensity of a birth event. The lists   `params_birth$birth` and `params_birth$TFR_weights` are then transformed into  C++ vectors (index starting at 0).
 
-
-```r
+```{r}
 birth_intensity_code <- '
     if (I.male) result = 0.;
     else {
@@ -235,8 +208,7 @@ birth_intensity_code <- '
 ```
 
 Birth event creation
-
-```r
+```{r}
 birth_event <- mk_event_individual(
     type = "birth",
     intensity_code = birth_intensity_code,
@@ -264,8 +236,7 @@ The vectors of discrete probabilities determining the action of the event when a
 
 Note that data frame are not accepted as model parameters.
 
-
-```r
+```{r}
 params_swap <- with(toy_params$swap,
     list(
         "swap_intensities" = apply(intensities, 2, function(rates) stepfun(x=ages,
@@ -276,25 +247,18 @@ params_swap <- with(toy_params$swap,
 )
 ```
 
-
-```r
+```{r}
  df_intensities <- melt(data.frame("age"=c(0,15,30,45),toy_params$swap$intensities),
 			id.vars="age")
 ```
 
-
-```r
+```{r, hpIMD_df}
 ggplot(df_intensities, aes(x=age,y=value,color=variable))+geom_step()+
 scale_color_discrete(name="Origin IMD quintile")+ylab("swap intensity")
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_df-1.pdf")
-```
-
 C++ code of the intensity of a swap event, using the model parameters:
-
-```r
+```{r}
 intensity_code_swap <- '
     result = swap_intensities[I.IMD-1](age(I,t));
 '
@@ -307,17 +271,11 @@ If a swap event occurs, the new IMD subgroup of the individual is determined by 
 For instance, an individual of age in $[0,15]$ has a probability of 0.6 to move on IMD subgroup 1 and 0.4 to move to IMD subgroup 2.
 
 Discrete random variables can be drawn in `IBMPopSim` by calling the function `Cdiscrete` in the kernel code, with an `Armadillo` vector or matrix (see Section 3 of `vignette('IBMPopSim')`.
-
-```r
+```{r}
 params_swap$swap_distribution
-##      IMD1 IMD2 IMD3 IMD4 IMD5
-## [1,]  0.6  0.4  0.0  0.0  0.0
-## [2,]  0.0  0.0  0.4  0.3  0.3
-## [3,]  0.6  0.4  0.0  0.0  0.0
 ```
 
-
-```r
+```{r}
 kernel_code_swap <- '
     int idx = swap_age_to_idx(age(I,t)); // variables must by typed in C++
     I.IMD = CDiscrete(swap_distribution.begin_row(idx),
@@ -327,8 +285,7 @@ kernel_code_swap <- '
 
 Swap event creation:
 
-
-```r
+```{r}
 swap_event <- mk_event_individual(
     type = "swap",
     intensity_code = intensity_code_swap,
@@ -346,33 +303,17 @@ The model is created by calling the function `?mk_model` with as arguments:
 - The events list.
 - The vector of model parameters (only parameters name and types are saved).
 
-
-```r
+```{r}
 params = c(params_birth, params_death, params_swap)
 ```
 
-
-```r
+```{r}
 model <- mk_model(
     characteristics = get_characteristics(EW_popIMD_14$sample),
     events = list(birth_event, death_event, swap_event),
     parameters = params)
 
 summary(model)
-## Events:
-## #1: individual event of type birth
-## #2: individual event of type death
-## #3: individual event of type swap
-## --------------------------------------- 
-## Individual description:
-## names:  birth death male IMD 
-## R types:  double double logical integer 
-## C types:  double double bool int
-## --------------------------------------- 
-## R parameters available in C++ code:
-## names:  TFR_weights a_mean birth p_male death_male death_female swap_intensities swap_distribution swap_age_to_idx 
-## R types:  vector double list double list list list matrix closure 
-## C types:  arma::vec double list_of_function_x double list_of_function_x list_of_function_x list_of_function_x arma::mat function_x
 ```
 
 <!-- #region -->
@@ -386,8 +327,7 @@ The first step before simulating the model is to compute bounds for each event i
 
 **Birth intensity bound**
 
-
-```r
+```{r}
 E <-c(0,50)
 birth_max <- with(params,
                   max(sapply(1:3, function(i)(
@@ -399,15 +339,13 @@ birth_max <- with(params,
 **Death intensity bound**
 
 The operator `?max` has been overloaded in `IBMPopSim` and can be applied to step functions.
-
-```r
+```{r}
 death_max <- max(sapply(params$death_male, max),
                  sapply(params$death_female, max))
 ```
 
 **Swap intensity bound**
-
-```r
+```{r fig.align="center"}
 swap_max <- max(sapply(params$swap_intensities, max))
 ```
 
@@ -419,14 +357,12 @@ Recording all swap events is computationally expensive. To overcome this difficu
 
 The first component of the variable `t_sim` below is the initial time. The simulation returns `n-1` data frame representing the population at $t\_sim[1],..,t\_sim[n]$. The data frame corresponding to time $t\_sim[i]$ is composed of all individuals who lived in the population before $t\_sim[i]$, with their characteristics at time  $t\_sim[i]$.
 
-
-```r
+```{r}
 t_sim <- 0:50
 n <- length(t_sim)
 ```
 
-
-```r
+```{r, warning=FALSE}
 sim_out <- popsim(model,
     population = EW_popIMD_14$sample, # Initial population
     events_bounds = c('birth' = birth_max, 'swap' = swap_max, 'death' = death_max),
@@ -435,7 +371,6 @@ sim_out <- popsim(model,
     time = t_sim,
     multithreading=TRUE # Set to T since there are no interactions
                 )
-## Simulation on  [0, 1]  [1, 2]  [2, 3]  [3, 4]  [4, 5]  [5, 6]  [6, 7]  [7, 8]  [8, 9]  [9, 10]  [10, 11]  [11, 12]  [12, 13]  [13, 14]  [14, 15]  [15, 16]  [16, 17]  [17, 18]  [18, 19]  [19, 20]  [20, 21]  [21, 22]  [22, 23]  [23, 24]  [24, 25]  [25, 26]  [26, 27]  [27, 28]  [28, 29]  [29, 30]  [30, 31]  [31, 32]  [32, 33]  [33, 34]  [34, 35]  [35, 36]  [36, 37]  [37, 38]  [38, 39]  [39, 40]  [40, 41]  [41, 42]  [42, 43]  [43, 44]  [44, 45]  [45, 46]  [46, 47]  [47, 48]  [48, 49]  [49, 50]
 ```
 
 # Outputs
@@ -445,8 +380,7 @@ Swap events modify the population composition, by increasing the proportion of i
 
 ## Initial and final age pyramids with different IMD subgroups
 
-
-```r
+```{r}
 pyr_init<- age_pyramids(EW_popIMD_14$sample,time = 0, ages = c(0:100,130))
 pyr_init$group_name <- with(pyr_init, ifelse(male, paste('Males - IMD', IMD),
 						paste('Females - IMD', IMD)))
@@ -454,41 +388,26 @@ pyr_init$group_name <- with(pyr_init, ifelse(male, paste('Males - IMD', IMD),
 
 Final age pyramid
 
-
-```r
+```{r}
 pops_out <- sim_out$population
 ```
 
-
-```r
+```{r}
 pyr_IMD <- age_pyramid(pops_out[[50]], time = 50,ages = c(0:100,130))
 pyr_IMD$group_name <- with(pyr_IMD, ifelse(male, paste('Males - IMD', IMD),
 						paste('Females - IMD', IMD)))
 ```
 
-
-```r
+```{r}
 colors <- c(sequential_hcl(n=5, palette = "Magenta"),
             sequential_hcl(n=5, palette = "Teal"))
 names(colors) <- c(paste('Females - IMD', 1:5),
                    paste('Males - IMD', 1:5))
 ```
 
-
-```r
+```{r, hpIMD_pyramids}
 plot_pyramid(pyr_init,colors)
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_pyramids-1.pdf")
-```
-
-```r
 plot_pyramid(pyr_IMD,colors)
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_pyramids-2.pdf")
 ```
 
 <!--```{remark}-->
@@ -499,8 +418,7 @@ knitr::include_graphics("hpIMD_pyramids-2.pdf")
 
 The plots below  illustrates the evolution of the female population composition for different age groups over time.
 
-
-```r
+```{r}
 age_grp <- seq(30,95,15)
 age_pyrs <- lapply(1:(n-1), function (i)(age_pyramid(pops_out[[i]],t_sim[i+1],age_grp)))
 age_pyr_fem <- filter(bind_rows(age_pyrs,.id="time"), male==FALSE)
@@ -509,18 +427,13 @@ compo_pop_fem <- age_pyr_fem %>%
 		mutate(composition = value/sum(value))
 ```
 
-
-```r
+```{r, hpIMD_compo_fem}
 ggplot(compo_pop_fem, aes(x=as.integer(time),y=composition,colour=as.factor(IMD)))+
 geom_line()+
 facet_wrap("Age group"~age)+
 scale_y_continuous(labels = scales::percent)+
 xlab("Time")+
 ylab("Proportion of females in IMD subgroup")
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_compo_fem-1.pdf")
 ```
 
 # Different simulations with the same model
@@ -531,8 +444,7 @@ In particular, events can be deactivated by setting the event bound to 0.
 
 ## Simulation without swap events
 
-
-```r
+```{r}
 sim_out_noswp <- popsim(model,
     population = EW_popIMD_14$sample,
     events_bounds = c('birth' = birth_max, 'swap' = 0, 'death' = death_max),
@@ -540,22 +452,19 @@ sim_out_noswp <- popsim(model,
     parameters = params,
     time = t_sim,
     multithreading=TRUE)
-## [1] "event swap is deactivated"
-## Simulation on  [0, 1]  [1, 2]  [2, 3]  [3, 4]  [4, 5]  [5, 6]  [6, 7]  [7, 8]  [8, 9]  [9, 10]  [10, 11]  [11, 12]  [12, 13]  [13, 14]  [14, 15]  [15, 16]  [16, 17]  [17, 18]  [18, 19]  [19, 20]  [20, 21]  [21, 22]  [22, 23]  [23, 24]  [24, 25]  [25, 26]  [26, 27]  [27, 28]  [28, 29]  [29, 30]  [30, 31]  [31, 32]  [32, 33]  [33, 34]  [34, 35]  [35, 36]  [36, 37]  [37, 38]  [38, 39]  [39, 40]  [40, 41]  [41, 42]  [42, 43]  [43, 44]  [44, 45]  [45, 46]  [46, 47]  [47, 48]  [48, 49]  [49, 50]
+
 ```
 
 **Comparison of population evolution with and without swap events**
 
-
-```r
+```{r}
 age_pyrs_nosw <- lapply(1:(n-1), function (i)(age_pyramid(sim_out_noswp$population[[i]],
 							  t_sim[i+1],age_grp)))
 compo_pop_fem_nosw <- filter(bind_rows(age_pyrs_nosw,.id="time"), male==FALSE) %>%
 				group_by(age,time) %>% mutate(perc=value/sum(value))
 ```
 
-
-```r
+```{r, hpIMD_compo_fem2}
 #  Without swap events
 ggplot(compo_pop_fem_nosw, aes(x=as.integer(time),y=perc,colour=as.factor(IMD)))+
 geom_line()+
@@ -564,13 +473,6 @@ scale_y_continuous(labels = scales::percent, limits = c(0.12,0.3))+
 xlab("Time")+
 ylab("Proportion of females in IMD subgroup")+
 labs(title = "Population without swap events")
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_compo_fem2-1.pdf")
-```
-
-```r
 
 
 ## With swap events
@@ -583,86 +485,40 @@ ylab("Proportion of females in IMD subgroup")+
 labs(title = "Population with swap events")
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("hpIMD_compo_fem2-2.pdf")
-```
-
 ## Simulation of individual life courses
 
 
 In the presence of swap events, individual trajectories can be isolated by attributing a unique id to each individuals in the population. This is done during the model creation step by setting the optional argument `with_id` to `TRUE`.
 
 
-
-```r
+```{r}
 model_id <- mk_model(
     characteristics = get_characteristics(EW_popIMD_14$sample),
     events = list(birth_event, death_event, swap_event),
     parameters = params,
     with_id = TRUE # Adds a characteristic called id, unique for each individuals.
                  )
-## [1] "add 'id' as individual attributes"
 ```
 
-
-```r
+```{r}
 sim_out_id <- popsim(model_id,
     population = EW_popIMD_14$sample,
     events_bounds = c('birth' = birth_max, 'swap' = swap_max, 'death' = death_max),
     parameters = params,
     time = t_sim,
     multithreading=TRUE)
-## [1] "Add 'id' attributes to the population."
-## Simulation on  [0, 1]  [1, 2]  [2, 3]  [3, 4]  [4, 5]  [5, 6]  [6, 7]  [7, 8]  [8, 9]  [9, 10]  [10, 11]  [11, 12]  [12, 13]  [13, 14]  [14, 15]  [15, 16]  [16, 17]  [17, 18]  [18, 19]  [19, 20]  [20, 21]  [21, 22]  [22, 23]  [23, 24]  [24, 25]  [25, 26]  [26, 27]  [27, 28]  [28, 29]  [29, 30]  [30, 31]  [31, 32]  [32, 33]  [33, 34]  [34, 35]  [35, 36]  [36, 37]  [37, 38]  [38, 39]  [39, 40]  [40, 41]  [41, 42]  [42, 43]  [43, 44]  [44, 45]  [45, 46]  [46, 47]  [47, 48]  [48, 49]  [49, 50]
 ```
 
 When each individual has been attributed a unique id, a data frame summarizing each life course can be obtained from the simulation output `sim_out_id$population`(list of data frames) by calling the function `merge_pop_withid`.
 
 Characteristics such as gender which don't change over time can be specified in the argument `char_ignored`.
 
-
-```r
+```{r}
 pop_id <- merge_pop_withid(sim_out_id$population,char_ignored = c("male"))
 ```
 
 `pop_id` is data frame in which each line corresponds to an individual and include his id, birth date, death date, gender and IMD subgroup at each discretization time (components of $t_{sim}$).
 
-
-```r
+```{r}
 head(pop_id)
-##   id       birth death  male IMD_1 IMD_2 IMD_3 IMD_4 IMD_5 IMD_6 IMD_7 IMD_8 IMD_9 IMD_10
-## 1  1 -0.09170591    NA FALSE     5     5     5     5     5     5     5     5     5      5
-## 2  9 -0.75010045    NA  TRUE     5     5     5     5     5     5     5     5     5      5
-## 3 17 -0.26214821    NA  TRUE     4     4     4     4     4     4     4     4     4      4
-## 4 25 -0.08906050    NA  TRUE     5     5     5     5     5     5     5     5     5      5
-## 5 33 -0.10749491    NA  TRUE     3     3     3     3     3     3     3     3     3      3
-## 6 41 -0.43381694    NA FALSE     4     4     4     4     4     4     4     4     2      2
-##   IMD_11 IMD_12 IMD_13 IMD_14 IMD_15 IMD_16 IMD_17 IMD_18 IMD_19 IMD_20 IMD_21 IMD_22
-## 1      5      5      5      5      5      5      5      5      5      5      5      5
-## 2      5      5      5      5      5      5      5      5      5      5      5      5
-## 3      4      4      4      4      4      4      4      4      4      4      4      4
-## 4      5      1      1      1      1      1      1      1      1      1      1      1
-## 5      3      3      3      3      3      3      3      3      3      3      3      3
-## 6      2      2      2      2      2      2      2      2      2      2      2      2
-##   IMD_23 IMD_24 IMD_25 IMD_26 IMD_27 IMD_28 IMD_29 IMD_30 IMD_31 IMD_32 IMD_33 IMD_34
-## 1      5      5      5      5      5      5      5      5      5      5      5      1
-## 2      5      5      5      5      5      5      5      5      5      5      5      5
-## 3      4      4      4      4      4      4      4      4      4      4      4      4
-## 4      1      1      1      1      1      1      1      1      1      1      1      1
-## 5      3      3      3      3      3      3      3      3      3      3      3      3
-## 6      2      2      2      2      2      2      2      2      2      2      2      2
-##   IMD_35 IMD_36 IMD_37 IMD_38 IMD_39 IMD_40 IMD_41 IMD_42 IMD_43 IMD_44 IMD_45 IMD_46
-## 1      1      1      1      1      1      1      1      1      1      1      1      1
-## 2      5      5      5      5      5      5      5      5      5      5      5      5
-## 3      4      4      4      4      4      4      4      4      4      4      4      4
-## 4      1      1      1      1      1      1      1      1      1      1      1      1
-## 5      3      3      3      3      3      3      3      3      3      3      3      3
-## 6      2      2      2      2      2      2      2      2      2      2      2      2
-##   IMD_47 IMD_48 IMD_49 IMD_50
-## 1      1      1      1      1
-## 2      5      5     NA     NA
-## 3      4      4      4      4
-## 4      1      1      1      1
-## 5      3      3      3      3
-## 6      2      2      2      2
 ```

@@ -3,10 +3,9 @@ title: "quick_model"
 ---
 
 - We take here an initial population, stored in a data frame, composed of $100\,000$ individuals marked by their gender (encoded by a Boolean characteristic): 
-```{r}
-library("IBMPopSim")
+```{r, echo=FALSE}
+library(IBMPopSim)
 ```
-
 ```{r}
 pop <- EW_pop_14$sample
 ```
@@ -43,7 +42,7 @@ events_bounds = c("death" = params$alpha * exp(params$beta * a_max),
                   "birth" = max(params$birth_rate))
 ```
 Then, the function `popsim` can be called:
-```{r}
+```{r quick_popsim}
 sim_out <- popsim(model, pop, events_bounds, params,
                   age_max = a_max, time = 30)
 ```

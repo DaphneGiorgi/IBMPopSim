@@ -52,7 +52,7 @@ popsim returns a list of composed of \describe{
 This function simulates the random evolution of an IBM.
 }
 \examples{
-\dontrun{
+\donttest{
 init_size <- 100000
 pop <- data.frame(birth = rep(0, init_size), death = NA)
 

@@ -15,9 +15,25 @@ vignette: >
   \usepackage[utf8]{inputenc}
   %\VignetteEngine{knitr::rmarkdown}
 ---
+```{r knitr_opts, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.align = "center",
+  collapse = TRUE,
+  dev = c('pdf', 'png'),
+  fig.width = 7,
+  fig.height = 5,
+  dpi = 150
+)
+```
 
-
-
+```{r setup, include=FALSE}
+library(IBMPopSim)
+library(ggfortify)
+library(gridExtra)
+library(StMoMo)
+library(demography)
+```
 
 This vignette provides an example  of usage of the package IBMPopSim, for simulating an heterogeneous life insurance portfolio.
 
@@ -41,8 +57,7 @@ The population data frame has thus the two (mandatory) columns:
 
 and the column `risk_cls` corresponding to the policyholders risk class.
 
-
-```r
+```{r}
 N <- 30000
 pop_df <- data.frame("birth"=rep(-65,N),"death"=rep(NA,N),"risk_cls"= rep(1:2,each= N/2))
 ```
@@ -61,8 +76,7 @@ Individuals in the  risk class 1 are assumed to have  mortality rates 20% higher
 
 and where $d_k(a)$ is the point estimate of the mortality rate for age $a$ and  year $2017 + k$.
 
-
-```r
+```{r}
 EWStMoMoMale <- StMoMoData(EWdata_hmd, series = "male")
 
 #Fitting
@@ -70,42 +84,28 @@ LC <- lc()
 ages.fit <- 65:100
 years.fit <- 1950:2016
 LCfitMale <- fit(LC, data = EWStMoMoMale, ages.fit = ages.fit, years.fit = years.fit)
-## StMoMo: Start fitting with gnm
-## Initialising
-## Running start-up iterations..
-## Running main iterations.....
-## Done
-## StMoMo: Finish fitting with gnm
+
 ```
 
-
-```r
+```{r, insur_forecast}
 t <- 30
 LCforecastMale <- forecast(LCfitMale, h = t)
 plot(LCforecastMale)
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_forecast-1.pdf")
-```
-
 Age and time dependent function can be created with the package function `?piecewise_xy`, with allows to define age-specific mortality rates, piecewise constant in time, such as $d^i$ in \@ref(eq:deathrates).
 
-
-```r
+```{r}
 d_k <- apply(LCforecastMale$rates, 2, function(x) stepfun(66:100, x))
 breaks <- 1:29
 death_male <- piecewise_xy(breaks,d_k)
 ```
 
-
-```r
+```{r}
 death_male(10,65) # Death rate at time t=10 (years 2027) and age 60.
-## [1] 0.009082013
 ```
 
-
-```r
+```{r}
 params <- list("death_male" = death_male, "alpha" = c(1.3,0.8))
 ```
 
@@ -114,8 +114,7 @@ params <- list("death_male" = death_male, "alpha" = c(1.3,0.8))
 
 Individuals exit the portfolio at a rate $\mu^{i}$, $i=1,2$ depending on their risk class.
 
-
-```r
+```{r}
 params$mu <- c(0.001,0.06) # Exit event rate
 ```
 
@@ -125,8 +124,7 @@ params$mu <- c(0.001,0.06) # Exit event rate
 Entry events occur at a Poissonian (constant) rate $\lambda$ (in average $\lambda$ individuals enter the population each year).
 
 
-
-```r
+```{r}
 params$lambda <- 30000 # Entry events
 ```
 
@@ -137,8 +135,7 @@ params$lambda <- 30000 # Entry events
 
 The vector parameter `alpha` will be  transformed into a C++ vector (with index starting at 0) during the model creation, and `death_male` into a C++ function.
 
-
-```r
+```{r}
 death_event <- mk_event_individual(
     type = "death",
     intensity_code = "result = alpha[I.risk_cls-1] * death_male(t,age(I, t));"
@@ -152,8 +149,7 @@ Each individual in the portfolio can  exit the portfolio at a constant (individu
 In the presence of events of type `exit` in the population, a characteristic named `out` is automatically added to the individuals characteristics, set to `FALSE` by default.
 When an individual leaves the population, his characteristic `out` is set to `TRUE` and the date at which he exited the population is recorded in the column `death`.
 
-
-```r
+```{r}
 exit_event <- mk_event_individual(
     type = "exit",
     intensity = "result = mu[I.risk_cls-1]; "
@@ -168,13 +164,11 @@ New policyholders enter the population at a constant rate $\lambda$ (on average,
 In the presence of events of type `entry` in the population, a characteristic named `entry` is automatically added to the individuals characteristics, set to `NA` by default.
 When an individual leaves the population, his characteristic `entry` is set to the date $t$ at which he enters the population.
 
-
-```r
+```{r}
 params$p <- 0.5
 ```
 
-
-```r
+```{r}
 entry_event <- mk_event_poisson(
     type = "entry",
     intensity = "lambda",
@@ -193,30 +187,13 @@ Note that entries can also occur at a rate $\lambda(t)$ depending on time. For m
 
 # Model creation
 
-
-```r
+```{r}
 model <- mk_model(
     characteristics = get_characteristics(pop_df),# Characteristics names ant type
     events = list(death_event,entry_event, exit_event), # Events list
     parameters = params # Model parameters
 )
-## [1] "entry event: add 'entry' as individual attributes"
-## [1] "exit event: add 'out' as individual attributes"
 summary(model)
-## Events:
-## #1: individual event of type death
-## #2: poisson event of type entry
-## #3: individual event of type exit
-## --------------------------------------- 
-## Individual description:
-## names:  birth death risk_cls entry out 
-## R types:  double double integer double logical 
-## C types:  double double int double bool
-## --------------------------------------- 
-## R parameters available in C++ code:
-## names:  death_male alpha mu lambda p 
-## R types:  closure vector vector double double 
-## C types:  function_xy arma::vec arma::vec double double
 ```
 
 # Simulation
@@ -226,15 +203,13 @@ summary(model)
 
 For events with Poisson (constant) intensity, the bound is simply the intensity.
 
-
-```r
+```{r}
 death_max <- max(sapply(d_k, function(x) { max(x) }))
 ```
 
 ## Simulation
 
-
-```r
+```{r}
 sim_out <- popsim(model = model,
     population =pop_df,
     events_bounds = c('death' = death_max, "entry"=params$lambda, "exit"=max(params$mu)),
@@ -242,19 +217,12 @@ sim_out <- popsim(model = model,
     time = t,
     age_max = 110,
     multithreading = TRUE)
-## Warning in popsim(model = model, population = pop_df, events_bounds = c(death =
-## death_max, : Add 'entry' attributes to the population.
-## Warning in popsim(model = model, population = pop_df, events_bounds = c(death =
-## death_max, : Add 'out' attributes to the population.
-## Simulation on  [0, 30]
 ```
 
 **Ratio of accepted events**
 
-
-```r
+```{r}
 sim_out$logs[["effective_events"]] / sim_out$logs[["proposed_events"]]
-## [1] 0.2511387
 ```
 
 # Outputs
@@ -262,15 +230,8 @@ sim_out$logs[["effective_events"]] / sim_out$logs[["proposed_events"]]
 Data frame `sim_out$population` is composed of all individuals present in the portfolio over the period $[0, t]$ (individuals in the initial population and who entered the portfolio). Each line corresponds to an individual, with his date of birth, date of death (`NA` if still alive at the end of the simulation), risk class, and the characteristic `out`.
 The characteristics `out` is set to `TRUE` for individuals who left the portfolio due to an exit event.
 
-
-```r
+```{r}
 str(sim_out$population)
-## 'data.frame':	930799 obs. of  5 variables:
-##  $ birth   : num  -65 -65 -65 -65 -65 -65 -65 -65 -65 -65 ...
-##  $ death   : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ risk_cls: int  1 1 1 1 1 1 1 1 1 1 ...
-##  $ entry   : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ out     : logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
 ```
 
 The function `?age_pyramid`computes the age pyramid of a population data frame at a given time.
@@ -278,29 +239,19 @@ The function `?age_pyramid`computes the age pyramid of a population data frame a
 
 ## Age pyramids
 
-
-```r
+```{r, insur_pyramid}
 age_grp <- 65:98
 pyr = age_pyramid(sim_out$population, time = 30, ages=age_grp)
 plot_pyramid(pyr, age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_pyramid-1.pdf")
-```
-
 In order to visualize both risk classes on the same age pyramid with `?plot_pyramid` a column `group_name` containing the individuals risk classes must be added to the age pyramid, and the colors representing each subgroup have to be specified.
 
-
-```r
+```{r, insur_pyr_group}
 colnames(pyr)[2]<- "group_name"
 pyr$group_name <- as.character(pyr$group_name)
 colors <- c("1"="#00AFBB","2"="#FC4E07")
 plot_pyramid(pyr,colors,age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_pyr_group-1.pdf")
 ```
 
 ## Life tables
@@ -313,27 +264,23 @@ Note that when individuals enter the population at different ages, the package f
 
 Death and exposure data can be computed from the simulated portfolio. Below is an example with individuals in risk class 1. A Lee-Carter model is reestimated from the simulated data, and compare with the initial forecast.
 
-
-```r
+```{r}
 age_grp <- 65:95
 ```
 
-
-```r
+```{r}
 Dx <- death_table(sim_out$population[sim_out$population$risk_cls==1,],
                   ages = age_grp, period = 0:30)
 Ex <- exposure_table(sim_out$population[sim_out$population$risk_cls==1,],
                      ages = age_grp, period = 0:30)
 ```
 
-
-```r
+```{r, warning=FALSE, message=FALSE, results='hide'}
 LC <- lc()
 LCfitSim1 <- fit(LC, Dxt = Dx , Ext = Ex,ages=age_grp[-length(age_grp)])
 ```
 
-
-```r
+```{r, insur_LeeCarter_risk1}
 time <- 30
 plot(age_grp[-length(age_grp)],
      LCfitSim1$ax + LCfitSim1$bx*LCfitSim1$kt[t],
@@ -346,10 +293,6 @@ legend(x="bottomrigh", legend=c("Estimated mortality rates", "Point forecast"),
        col=c("red", "blue"),lty=c(NA,1),pch=c(1,NA))
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_LeeCarter_risk1-1.pdf")
-```
-
 ### Global portofolio
 
 Due to the mortality differential between risk class 1 and 2, there should be more individuals in risk class 2 at higher ages.
@@ -357,15 +300,13 @@ However, due to exit events, more individuals in risk class 1 one exit the portf
 
 **Computation of central mortality rates**
 
-
-```r
+```{r}
 Dx_pop <- death_table(sim_out$population, ages = age_grp, period = 0:30)
 Ex_pop <- exposure_table(sim_out$population, ages = age_grp, period = 0:30)
 mx_pop <- Dx_pop/Ex_pop
 ```
 
-
-```r
+```{r, insur_mortality_rates}
 time <- 30
 plot(age_grp[-length(age_grp)], log((Dx_pop/Ex_pop)[,time]),
      main = "Portfolio log mortality rates at t=30",
@@ -380,38 +321,24 @@ legend(x="bottomrigh", legend=c("Portfolio", "Risk class 1","Risk class 2"),
        col=c("black","#00AFBB","#FC4E07"), lty=c(NA,1,1), pch=c(1,NA,NA))
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_mortality_rates-1.pdf")
-```
-
 **Evolution of portfolio mortality rates over time**
 
 The decrease in mortality rates is slower in the portfolio than in the global population due to composition changes.
 
-
-```r
+```{r, insur_evol_mortality}
 matplot(age_grp[-length(age_grp)],log(mx_pop),
         type='l', xlab = "age", ylab = "log mortality rates")
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_evol_mortality-1.pdf")
-```
-
 **Cohort mortality rates**
 
-
-```r
+```{r, insur_cohort}
 plot(65:94,log(extractCohort(mx_pop, age= 65, period =0)), type="l")
 lines(65:89,log(extractCohort(mx_pop, age= 65, period =5)), col = "#00AFBB")
 lines(65:84,log(extractCohort(mx_pop, age= 65, period =10)), col="#FC4E07")
 legend(x="bottomrigh",
        legend=c("Initial cohort", "Age 65 at t=5","Age 65 at t=10"),
        col=c("black","#00AFBB","#FC4E07"), lty=c(1,1,1))
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_cohort-1.pdf")
 ```
 
 # Different simulations with the same model

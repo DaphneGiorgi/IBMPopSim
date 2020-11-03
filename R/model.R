@@ -49,7 +49,7 @@ get_characteristics <- function(population) {
 #' }
 #'
 #' @examples
-#'\dontrun{
+#'\donttest{
 #'params <- list("p_male"= 0.51,
 #'               "birth_rate" = stepfun(c(15,40),c(0,0.05,0)),
 #'               "death_rate" = gompertz(0.008,0.02))

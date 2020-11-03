@@ -16,7 +16,7 @@ Objet of class \code{\link[stats]{stepfun}} with option \code{right = FALSE} (ca
 }
 \description{
 Given the vectors \verb{(x[1],...,x[n])} and \verb{(y[0],y[1],...,y[n])} (one value more!), \code{stepfun(x, y)} returns an interpolating step function, say \code{f_n}. This is the cadlag version (\code{right = FALSE}) of the \code{stepfun} function from package \code{stats}. The step function value \code{f_n(t)} equals to the constant \code{y[k-1]} for \code{t} in \verb{[x[k-1], x[k])} so that
-\deqn{f_n(t) = \sum_{k=1}^{n+1} y_{k-1} \mathbb{1}_{[x_{k-1}, x_{k})}(t),}
+\deqn{f_n(t) = \sum_{k=1}^{n+1} y_{k-1} {1}_{[x_{k-1}, x_{k})}(t),}
 with\eqn{x_0=-\infty} and \eqn{x_{n+1}=+\infty}.
 }
 \details{

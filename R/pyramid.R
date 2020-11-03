@@ -84,7 +84,7 @@ age_pyramids <- function(population, time = 0, ages = c(0:110,Inf)) {
 #' @examples
 #' plot_pyramid(subset(EW_pop_14$age_pyramid, as.numeric(age) <= 110))
 #'
-#'\dontrun{
+#'\donttest{
 #' library(colorspace)
 #' pyr_IMD <- subset(EW_popIMD_14$age_pyramid, as.numeric(age) <= 110)
 #' pyr_IMD$group <- with(pyr_IMD, ifelse(male, paste('Males - IMD', IMD), paste('Females - IMD', IMD)))

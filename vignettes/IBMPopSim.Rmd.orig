@@ -16,9 +16,24 @@ vignette: >
   \usepackage[utf8]{inputenc}
   %\VignetteEngine{knitr::rmarkdown}
 ---
+```{r knitr_opts, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.align = "center",
+  cache = FALSE,
+  collapse = TRUE,
+  dev = c('pdf', 'png'),
+  fig.width = 7,
+  fig.height = 5,
+  dpi = 150
+)
+```
 
-
-
+```{r init, include=FALSE}
+library(IBMPopSim)
+library(dplyr)
+library(purrr)
+```
 
 The IBMPopSim package is conceived to simulate the random evolution of structured population dynamics, called stochastic Individual Based Models (IBMs), based on the description of individual behaviors.
 
@@ -116,57 +131,8 @@ Thanks to  model parameters and predefined functions, the C++ code to be written
 
 
 ## Installation
+```{r child="../man/fragments/installation.Rmd"}
 
-
-The latest stable version can be installed from CRAN:
-
-``` r
-install.packages('IBMPopSim')
-```
-
-The latest development version can be installed from github:
-
-``` r
-# install.packages("devtools")
-devtools::install_github('DaphneGiorgi/IBMPopSim')
-```
-
-### First example to check installation 
-
-To illustrate the use of the package and to check the installation, a simple model with Poisson arrivals and exits is implemented. 
-
-
-```r
-library(IBMPopSim)
-
-init_size <- 100000
-pop <- data.frame(birth = rep(0, init_size), death = NA)
-
-birth = mk_event_poisson(type = 'birth', intensity = 'lambda')
-death = mk_event_poisson(type = 'death', intensity = 'mu')
-params = list('lambda' = 100, 'mu' = 100)
-
-# mk_model compiles C++ code using sourceCpp from Rcpp
-birth_death <- mk_model(events = list(birth, death),
-                        parameters = params)
-```
-
-If there are no errors then the C++ built environment is compatible with the package. The model is created and a C++ code has been compiled. The simulation is done using the `popsim` function.  
-
-
-```r
-sim_out <- popsim(model = birth_death, 
-                  population = pop, 
-                  events_bounds = c('birth' = params$lambda, 'death' = params$mu),
-                  parameters = params, 
-                  time = 10)
-## Simulation on  [0, 10]
-
-num_births <- length(sim_out$population$birth) - init_size
-num_deaths <- sum(!is.na(sim_out$population$death))
-print(c("births" = num_births, "deaths" = num_deaths))
-## births deaths 
-##    965    988
 ```
 
 ## Quick model creation and simulation
@@ -180,91 +146,8 @@ In order to define a model, the user must specify three building blocks:
 
 The model can then be created from these three blocks.
 
+```{r child="../man/fragments/quick_model.Rmd"}
 
-
-- We take here an initial population, stored in a data frame, composed of $100\,000$ individuals marked by their gender (encoded by a Boolean characteristic): 
-
-
-```r
-pop <- EW_pop_14$sample
-```
-
-- The second step is to define the model parameters' list:
-
-```r
-params <- list("alpha" = 0.008, "beta" = 0.02, "p_male" = 0.51,
-               "birth_rate" = stepfun(c(15,40), c(0,0.05,0)))
-```
-
-- The last step is to defined the events that can occur in the population, here birth and death events:
-
-```r
-death_event <- mk_event_individual(type = "death",
-                  intensity_code = "result = alpha * exp(beta * age(I, t));")
-
-birth_event <- mk_event_individual(type = "birth", 
-                  intensity_code = "result = birth_rate(age(I,t));",
-                  kernel_code = "newI.male = CUnif(0, 1) < p_male;")
-```
-Note that these events contain some C++ statements that depend (implicitly) on the previously declared parameters in variable `params`. 
-
-- Finally, the model is created by calling the function `mk_model`. A C++ source code is obtained from the events and parameters, then compiled using the `sourceCpp` function of the `Rcpp` package. 
-
-```r
-model <- mk_model(characteristics = get_characteristics(pop),
-                  events = list(death_event, birth_event),
-                  parameters = params)
-```
-
-- In order to simulate a random trajectory of the population until a given time `T` bounds on the events intensities have to be specified:
-
-```r
-a_max <- 115
-events_bounds = c("death" = params$alpha * exp(params$beta * a_max),
-                  "birth" = max(params$birth_rate))
-```
-Then, the function `popsim` can be called:
-
-```r
-sim_out <- popsim(model, pop, events_bounds, params,
-                  age_max = a_max, time = 30)
-## Simulation on  [0, 30]
-```
-
-- The data frame `sim_out$population` contains the information (date of birth, date of death, gender) on individuals who lived in the population over the period $[0,30]$. Functions of the package allows to provide aggregated information on the population.
-
-```r
-pop_out <- sim_out$population
-head(pop_out)
-##       birth death  male
-## 1 -84.96353    NA FALSE
-## 2 -84.95439    NA  TRUE
-## 3 -84.95336    NA FALSE
-## 4 -84.91533    NA  TRUE
-## 5 -84.89949    NA FALSE
-## 6 -84.89676    NA  TRUE
-female_pop <- pop_out[pop_out$male==FALSE, ]
-age_pyramid(female_pop, ages = 85:90, time = 30)
-##       age  male value
-## 1 85 - 86 FALSE   238
-## 2 86 - 87 FALSE   228
-## 3 87 - 88 FALSE   200
-## 4 88 - 89 FALSE   192
-## 5 89 - 90 FALSE   202
-Dxt <- death_table(female_pop, ages = 85:90, period = 20:30)
-Ext <- exposure_table(female_pop, ages = 85:90, period = 20:30)
-```
-
-- Note that parameters of the model can be changed without recompiling the model. 
-
-```r
-params$beta <- 0.01
-
-# Update death event bound:
-events_bounds["death"] <- params$alpha * exp(params$beta * a_max)
-
-sim_out <- popsim(model, pop, events_bounds, params,
-                  age_max = a_max, time = 30)
 ```
 
 # Package description
@@ -281,16 +164,8 @@ A population is a data frame in which each row corresponds to an individual, and
 The data frame can contain more than two columns if individuals are described by additional characteristics such as gender, size, spatial location...
 In the example below, individuals are described by their birth and death dates, as well a Boolean characteristics called `male`. For instance, the first individual is a female whose age at $t_0=0$ is $t_0 - (-106.9055) = 106.9055$.
 
-
-```r
+```{r}
 head(pop)
-##       birth death  male
-## 1 -106.9055    NA FALSE
-## 2 -106.8303    NA FALSE
-## 3 -104.5097    NA  TRUE
-## 4 -104.2218    NA FALSE
-## 5 -103.5225    NA FALSE
-## 6 -103.3644    NA FALSE
 ```
 
 - **Type of a characteristic**.
@@ -336,8 +211,7 @@ A list of model parameters can be defined to simplify the events creation (see a
 - **List of predefined functions**: of same C++ type, either `function_x` or `function_xy`.
 
 For example,
-
-```r
+```{r}
 params <- list("coeff" = 1.1,
                "death_function" = gompertz(0.1, 0.005))
 ```
@@ -355,27 +229,17 @@ where `CLASS` is replaced by the class of the event intensity, `type` is the eve
 
 The other arguments  depend on the intensity class. Tables below <!--\@ref(tab:evtype) and \@ref(tab:evclass)-->  summarize the different intensity classes and types of events introduced in Section \@ref(eventsTh).
 
+```{r evtype, echo=FALSE}
+x = c("Birth", "Entry", "Death", "Exit", "Swap", "Custom")
+y = c("`birth`", "`entry`", "`death`", "`exit`", "`swap`", "`custom`")
+knitr::kable(data.frame(x,y), "pandoc", col.names = c("Event type","`Type`"), caption = "Event types", booktabs = TRUE)
+```
 
-Table: Event types
-
-Event type   `Type`   
------------  ---------
-Birth        `birth`  
-Entry        `entry`  
-Death        `death`  
-Exit         `exit`   
-Swap         `swap`   
-Custom       `custom` 
-
-
-Table: Intensity classes
-
-Intensity class         `Class`                 
-----------------------  ------------------------
-Poisson                 `poisson`               
-Inhomogeneous Poisson   `inhomogeneous_poisson` 
-Individual              `individual`            
-Interaction             `interaction`           
+```{r evclass, echo=FALSE}
+x = c("Poisson", "Inhomogeneous Poisson", "Individual", "Interaction")
+y = c("`poisson`", "`inhomogeneous_poisson`", "`individual`", "`interaction`")
+knitr::kable(data.frame(x,y), "pandoc", col.names = c("Intensity class", "`Class`"), caption = "Intensity classes", booktabs = TRUE)
+```
 
 The intensity function and kernel of an event are defined through arguments of the function `mk_event_CLASS`. These arguments are strings composed of few lines of code defining an event frequency and its action of the event on individuals.  Since the model is compiled using Rcpp, the code should be written in C++. However, thanks to the model parameters and functions/variables of the package, even the non-experienced C++ user can define a model quite easily. Several examples are given in the several vignettes of this package, and basic C++  tools are presented in Section \@ref(cppessentials).
 
@@ -419,8 +283,7 @@ pop.add(newI);
 
 where `_KERNEL_CODE_` is replaced by the content of the `kernel_code` argument. For instance, in a population where individuals are characterized by their gender, the  kernel code
 
-
-```r
+```{r}
 birth_kernel_code <- "newI.male = (CUnif(0, 1) < p_male);"
 ```
 
@@ -431,8 +294,7 @@ creates new individuals which are males with  probability `p_male`, or females o
 If an **entry event** is defined, a characteristic `entry` is automatically added to individuals in the population. When  an individual `I` enters the population, `I.entry` is set as the date at which the individual enters the population.
 When an entry  occurs the individual entering the population is not of age $0$. In this case, the user must specify the `kernel_code` argument indicating how the age and characteristics  of the new individual are chosen. For instance, with
 
-
-```r
+```{r}
 entry_kernel_code <- "double a = CUnif(20,40);
                       newI.set_age(a,t);
                       newI.male = (CUnif(0, 1) < p_male);"
@@ -443,16 +305,12 @@ An individual who enters the population has an age `a` taken uniformly in $[20,4
 
 The available variables for the birth and entry events C++ kernel codes are:
 
+```{r varBirth, echo=FALSE}
+Variable = c("`I`","`t`","` pop `","` newI `" , "Model parameters")
+Description = c("Current individual","Current time","Current population (vector)","New individual. By default for birth events `newI = I` with `newI.birth = t`","Depends on the model")
+knitr::kable(data.frame(Variable,Description), "pandoc", caption = 'C++ variables available for birth and entry events kernel code')
 
-Table: C++ variables available for birth and entry events kernel code
-
-Variable           Description                                                                  
------------------  -----------------------------------------------------------------------------
-`I`                Current individual                                                           
-`t`                Current time                                                                 
-` pop `            Current population (vector)                                                  
-` newI `           New individual. By default for birth events `newI = I` with `newI.birth = t` 
-Model parameters   Depends on the model                                                         
+```
 
 <!--```{remark}-->
 When there are several entry events, the user can identify which events generated the entry of an individual by adding a characteristic to the population recording the event name/id  when it occurs. The same holds for the other types of events. See e.g. `vignette('IBMPopSim_human_pop')` for an example with different death events.
@@ -463,15 +321,12 @@ When there are several entry events, the user can identify which events generate
 
 Finally, the  C++ kernel code for a **swap event** specifies how the new characteristics of the individual are chosen. The kernel code can depend on the following variables:
 
+```{r varSwap, echo=FALSE}
+Variable = c("`I`","`t`","` pop `", "Model parameters")
+Description = c("Current individual","Current time","Current population (vector)","Depends on the model")
+knitr::kable(data.frame(Variable,Description), "pandoc", caption = 'C++ variables available for swap events kernel code')
 
-Table: C++ variables available for swap events kernel code
-
-Variable           Description                 
------------------  ----------------------------
-`I`                Current individual          
-`t`                Current time                
-` pop `            Current population (vector) 
-Model parameters   Depends on the model        
+```
 
 We can now describe the different intensity classes.
 
@@ -488,14 +343,12 @@ mk_event_individual(type = "TYPE", name ="name",
 
 The `intensity_code` argument is a character string containing few lines C++ code describing the intensity function. The available variables for the intensity code are given in the following Table <!--\@ref(tab:varInd) :-->
 
+```{r varInd, echo=FALSE}
+Variable = c("`I`","`t`", "Model parameters")
+Description = c("Current individual","Current time","Depends on the model")
+knitr::kable(data.frame(Variable,Description), "pandoc", caption = 'C++ variables available for individual intensities')
 
-Table: C++ variables available for individual intensities
-
-Variable           Description          
------------------  ---------------------
-`I`                Current individual   
-`t`                Current time         
-Model parameters   Depends on the model 
+```
 
 The intensity value has to be stored in a variable called `result`.
 
@@ -504,8 +357,7 @@ The intensity value has to be stored in a variable called `result`.
 
 1. The intensity code below
 
-
-```r
+```{r}
 death_intensity<- "if (I.male)
                        result = alpha_1*exp(beta_1*age(I, t));
                    else
@@ -522,13 +374,11 @@ d(t,a) = 0.1\exp(0.005a) 1_{\{0\leq t <5\}} + 0.08\exp(0.005a) 1_{\{5\leq t\}}
 
 This is done by creating the death function $d$ using the predefined package functions `?piecewise_xy` and `?gompertz`. The function is then recorded as a model parameter and used in the argument `intensity_code` of `?mk_event_individual`.
 
-
-```r
+```{r}
 time_dep_function <- piecewise_xy(c(5),
                                   list(gompertz(0.1,0.005),
                                        gompertz(0.08,0.005)))
 time_dep_function(0, 65) # death intensity at time 0 and age 65.
-## [1] 0.1384031
 params <- list("death_function"= time_dep_function)
 
 death_event <- mk_event_individual(type = "death",
@@ -561,20 +411,16 @@ mk_event_interaction(type = "TYPE",
 The `interaction_code` argument contains few lines of C++ code describing the interaction function $U$. The interaction function value has to be stored in a variable called `result`. The available variables for the intensity code are given in the following Table:
 <!-- \@ref(tab:varInt):-->
 
+```{r varInt, echo=FALSE}
+Variable = c("`I`","`J`","`t`", "Model parameters")
+Description = c("Current individual","Another individual in the population","Current time","Depends on the model")
+knitr::kable(data.frame(Variable,Description), caption = 'C++ variables available for interaction code')
 
-Table: C++ variables available for interaction code
-
-|Variable         |Description                          |
-|:----------------|:------------------------------------|
-|`I`              |Current individual                   |
-|`J`              |Another individual in the population |
-|`t`              |Current time                         |
-|Model parameters |Depends on the model                 |
+```
 
 **Example**
 
-
-```r
+```{r}
 death_interaction_code<- " result = max(J.size -I.size,0);"
 ```
 
@@ -605,8 +451,7 @@ mk_event_poisson(type="TYPE",
 
 For instance,
 
-
-```r
+```{r results='hide'}
 mk_event_poisson(type = "entry", intensity = "lambda",
                  kernel_code = "double a_I= max(CNorm(20,2),0);
                                 newI.set_age(a_I,t);")
@@ -624,8 +469,7 @@ mk_event_inhomogeneous_poisson(type= "TYPE", name="NAME"
 
 For instance,
 
-
-```r
+```{r results='hide'}
 mk_event_inhomogeneous_poisson(type = "entry",
                                intensity = "result = lambda*(1+ cos(t));",
                                kernel_code = "double a_I= CNorm(20,2);
@@ -642,8 +486,7 @@ Finally, the IBM model is created using the function `?mk_model`. The model is c
 * The events list,
 * The model parameters.
 
-
-```r
+```{r eval=FALSE}
 model <- mk_model(characteristics = get_characteristics(pop),
                   event = events_list,
                   parameters = model_params)
@@ -658,8 +501,7 @@ This means that once the model has been created, various simulations can be done
 $$d(a) = 0.008 \exp(0.02a),$$
 and females between 15 and 40 can give birth with birth intensity 0.05. The newborn is a male with probability $p_{male}= 0.51$.
 
-
-```r
+```{r}
 params <- list("p_male"= 0.51,
                "birth_rate" = stepfun(c(15,40),c(0,0.05,0)),
                "death_rate" = gompertz(0.008,0.02))
@@ -681,27 +523,13 @@ model <- mk_model(characteristics = get_characteristics(pop),
                   parameters = params)
 
 summary(model)
-## Events:
-## #1: individual event of type death
-## #2: individual event of type birth
-## --------------------------------------- 
-## Individual description:
-## names:  birth death male 
-## R types:  double double logical 
-## C types:  double double bool
-## --------------------------------------- 
-## R parameters available in C++ code:
-## names:  p_male birth_rate death_rate 
-## R types:  double closure closure 
-## C types:  double function_x function_x
 ```
 
 ## Simulation and outputs {#simulation}
 
 Once the model has been created, the random evolution of the population can be simulated over a period of time $[0,T]$ by calling the function
 
-
-```text
+```{r eval=FALSE, highlight=FALSE}
 popsim(model,population, events_bounds, parameters, age_max=Inf, time,...)
 ```
 
@@ -732,15 +560,12 @@ $$ \bar \lambda_d = 0.008\exp(0.02 a_{max}).$$
 The events bounds are defined as a *named* R vector, with components names corresponding to the events names.  In our example, the death event has been named `"my_death_event"`. No name has been specified for the birth event which thus has the default name `"birth"`. Then,
 
 
-
-```r
+```{r}
 a_max <- 120 # maximum age
 events_bounds <- c("my_death_event" = 0.008*exp(0.02*a_max),
                   "birth" = max(params$birth_rate))
 
 events_bounds
-## my_death_event          birth 
-##     0.08818541     0.05000000
 ```
 
 
@@ -751,11 +576,9 @@ Note that the `?max` operator has been overloaded for some predefined functions 
 
 Once the model and events bounds have been defined, a random trajectory of the population can be simulated by calling
 
-
-```r
+```{r main_swap}
 sim_out <- popsim(model, pop, events_bounds, params,
                   age_max = a_max, time = 30)
-## Simulation on  [0, 30]
 #str(sim_out)
 ```
 
@@ -768,43 +591,28 @@ sim_out <- popsim(model, pop, events_bounds, params,
 When there are no swap events (individuals don't change of characteristics), the evolution of the population over the period $[0,30]$ is recorded in a single data frame `sim_out$population`.
 Each line of `sim_out$population` contains the information of an individual who lived in the population over the period $[0,30]$. This includes individuals who were initially in `pop`, as well as individuals who were born or entered the population.
 
-
-```r
+```{r}
 str(sim_out$population)
-## 'data.frame':	118198 obs. of  3 variables:
-##  $ birth: num  -90 -90 -89.9 -89.8 -89.8 ...
-##  $ death: num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ male : logi  TRUE FALSE FALSE FALSE FALSE FALSE ...
 ```
 
 
 The following Table <!--\@ref(tab:logs)--> describes the elements of the vector `sim_out$logs`containing information on  simulation algorithm:
 
-
-Table: Logs parameters
-
-|Elements                  |Description                                                    |
-|:-------------------------|:--------------------------------------------------------------|
-|`proposed_events`         |Number of candidate event times proposed during the simulation |
-|`effective_events`        |Number of events which occured during the simulation           |
-|`cleanall_counter`        |Number of population cleans                                    |
-|`duration_main_algorithm` |Simulation time                                                |
+```{r logs, echo=FALSE}
+ Elements= c("`proposed_events`","`effective_events`","`cleanall_counter`","`duration_main_algorithm`")
+Description = c("Number of candidate event times proposed during the simulation","Number of events which occured during the simulation","Number of population cleans", "Simulation time")
+knitr::kable(data.frame(Elements,Description), caption = 'Logs parameters')
+```
 
 For instance, the acceptance rate in the toy model is
-
-```r
+```{r}
 sim_out$logs['effective_events']/sim_out$logs['proposed_events']
-## effective_events 
-##        0.2190619
 ```
 
 and the simulation time  is
 
-
-```r
+```{r}
 sim_out$logs['duration_main_algorithm']
-## duration_main_algorithm 
-##                0.050844
 ```
 
 **Parameters modification and event removal**
@@ -812,26 +620,23 @@ sim_out$logs['duration_main_algorithm']
 As explained in Section \@ref(Modelcreation) the structure of the compiled model  allows  the parameters' values to be changed without recompiling the model.  For instance, the parameter  of the Gompertz death function can be modified to study the impact of an increase in  mortality.
 Before running the simulation, the events bounds should be updated accordingly accordingly.
 
-
-```r
+```{r results='hide'}
 params$death_rate <- gompertz(0.01,0.02) # New death rate
 
 events_bounds["my_death_event"] <- 0.01*exp(0.02*a_max) # Death event bound update
 
 new_sim_out <- popsim(model, pop, events_bounds,
                       params, age_max = a_max, time = 30) # Population simulation
+
 ```
 
 
 An event can also be remove by setting the event bound to 0:
 
-
-```r
+```{r}
 sim_out_no_birth <- popsim(model, pop,
     events_bounds = c("birth" = 0, "my_death_event" = 0.01*exp(0.02*a_max)),
     params, age_max = a_max, time = 30)
-## [1] "event birth is deactivated"
-## Simulation on  [0, 30]
 ```
 
 ### Outputs
@@ -840,8 +645,7 @@ The R data frame format for the output of the simulation allows all data manipul
 
 For instance, the population age pyramid can computed at a give time (resp. at multiple dates) with the function `?age_pyramid` (resp. `?age_pyramids`). We refer to the other vignettes for more details on age pyramids computation and visualization.
 
-
-```r
+```{r, main_plot_30}
 pop_out <- sim_out$population
 
 # Population age-pyramid at time 30:
@@ -849,15 +653,10 @@ pyr <- age_pyramid(pop_out, ages = 0:a_max, time = 30)
 plot_pyramid(pyr)
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("main_plot_30-1.pdf")
-```
-
 
 Mortality tables with compatibles with packages such as StMoMo can also be computed by with the functions `?death_table` and `?exposure_table`.
 
-
-```r
+```{r eval=FALSE}
 female_pop <- pop_out[pop_out$male==FALSE, ]
 Dxt <- death_table(female_pop, ages = 85:90, period = 20:30)    # Death table
 Ext <- exposure_table(female_pop, ages = 85:90, period = 20:30)
@@ -867,16 +666,13 @@ Ext <- exposure_table(female_pop, ages = 85:90, period = 20:30)
 
 If there are **no interactions** between individuals, i.e. if there are no events with intensity of class `interaction`, then the simulation can be parallelized easily by setting the optional parameter `multithreading` (`FALSE` by default) to `TRUE`:
 
-
-```r
+```{r results=FALSE}
 sim_out <- popsim(model, pop, events_bounds, params,
                   age_max = a_max, time = 30, multithreading = TRUE)
 ```
 
-
-```
-## duration_main_algorithm 
-##                0.009004
+```{r echo=FALSE}
+sim_out$logs["duration_main_algorithm"]
 ```
 
 By default, the number of threads is the number of concurrent threads supported by the available hardware implementation. The number of thread can be set manually with the optional argument `num_threads` of `?popsim`.
@@ -896,8 +692,7 @@ For $i=1\dots n$, the $i$th data frame describes individuals who lived in the po
 
 **Examples** A population 100 thousand individuals (or particles) is generated, all born at time 0 and divided into two subgroups. Individuals can swap from subgroup 1 (resp. 2) to subgroup 2 (resp. 1) at  rate 0.1 (resp. 0.3).
 
-
-```r
+```{r results=FALSE}
 pop <- data.frame("birth" = rep(0,1e5), "death" = rep(NA,1e5),
                   "sub_grp" = sample(1:2, 1e5, replace = TRUE))
 
@@ -915,8 +710,7 @@ model_swap <- mk_model(characteristics = get_characteristics(pop),
 
 Then, the population is simulated from $t_0=0$ to $t_n =20$, and `popsim` returns a list of 20 data frames composed of the population  at times $t=1\dots 20$.
 
-
-```r
+```{r results=FALSE}
 time_vec <- 0:20
 sim_out <-popsim(model = model_swap, population = pop,
                  events_bounds = c("swap"=max(unlist(rates))),
@@ -927,8 +721,7 @@ sim_out <-popsim(model = model_swap, population = pop,
 
 The model is an ergodic two states continuous time Markov chain with stationary distribution $(p_1,p_2)=(0,75,0.25)$. The figure below illustrates the convergence of the probability to be in subgroup 1 to $p_1$
 
-
-```r
+```{r}
 pop_size <- nrow(pop)
 # Mean number of individuals in subgroup 1 at each time:
 p_1_t <- lapply(sim_out$population, function(pop_df){
@@ -936,8 +729,8 @@ p_1_t <- lapply(sim_out$population, function(pop_df){
                 })
 ```
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("main_prob_subgroup1-1.pdf")
+```{r, main_prob_subgroup1, echo=FALSE, fig.cap="Evolution of probability to be in subgroup 1"}
+plot(time_vec[-1],p_1_t, type ="l", xlab= "time",  ylab="")
 ```
 
 <!--```{remark}-->
@@ -948,370 +741,43 @@ This example shows that IBMPopSIm can also be used to simulated continuous time 
 
 It is  possible to isolate the individuals' life course, by setting the optional argument `with_id` of `?mk_model` to `TRUE`. In this case, a new characteristic called `id` is automatically added to the population (if not already defined), identifying each individual with a unique integer.
 
-
-```r
+```{r}
 model_swap_id <- mk_model(characteristics =  get_characteristics(pop),
                           events = list(swap_event),
                           parameters = rates,
                           with_id = TRUE)
-## [1] "add 'id' as individual attributes"
 ```
 
 
-
-```r
+```{r main_life_courses}
 sim_out_id <-popsim(model = model_swap_id,
                     population = pop,
                     parameters = rates,
                     events_bounds = c("swap"=0.3),
                     time = seq(0,5, by=1),
                     multithreading = TRUE)
-## [1] "Add 'id' attributes to the population."
-## Simulation on  [0, 1]  [1, 2]  [2, 3]  [3, 4]  [4, 5]
 ```
 
 
-
-```r
+```{r}
 head(sim_out_id$population[[1]])
-##   id birth death sub_grp
-## 1  1     0    NA       2
-## 2  9     0    NA       2
-## 3 17     0    NA       2
-## 4 25     0    NA       1
-## 5 33     0    NA       1
-## 6 41     0    NA       2
 ```
 
 These data frames can be merged into a single data frame summarizing the life course of each individual, by calling the function `merge_pop_withid`.
 
-
-```r
+```{r}
 pop_list <- sim_out_id$population
 pop_merge <- merge_pop_withid(pop_list)
 head(pop_merge)
-##   id birth death sub_grp_1 sub_grp_2 sub_grp_3 sub_grp_4 sub_grp_5
-## 1  1     0    NA         2         2         2         2         1
-## 2  9     0    NA         2         2         2         1         2
-## 3 17     0    NA         2         2         2         2         2
-## 4 25     0    NA         1         1         1         1         1
-## 5 33     0    NA         1         1         1         1         1
-## 6 41     0    NA         2         2         2         2         2
 ```
 
 Each line of `pop_merge` corresponds to the life course of one individual. However, the population is only represented at time $t=0,1..,5$, and this data frame doesn't account for exact swap event times or multiple swap events that occurred between between two time steps.
 
 # C\+\+ essentials {#cppessentials}
 
+```{r child="../man/fragments/cpp.Rmd"}
 
-
-The arguments `intensity_code`, `interaction_code` and `kernel_code` of the events functions must contain some C++ code given by the user. You don't need to be a C++ guru to write the few instructions needed. These functions should use very little C++ syntax. They are essentially arithmetic or logical operations, tests and calls to predefined functions, which we give an overview below.
-
-For code efficiency, you should not allocate memory in these functions (no `new`) or use type containers (`std::vector`, `std::list`, ...). If you think you need to allocate memory, consider as parameter an R vector that will be mapped via `arma::vector` (see below), or declare the variable as `static`.
-Also, it should not be necessary to make a loop. Keep in mind that these functions should be fast. 
-
-There are no C++ language restrictions so you can use all the functions of the standard C++11 library. However we detail in this section some functions that should be sufficient. For more details on C++ and Rcpp we recommend: 
-
-- [C++ tutorial](https://www.cplusplus.com/doc/tutorial/)
-- [Rcpp](http://dirk.eddelbuettel.com/code/rcpp.html) and [RcppArmadillo](http://dirk.eddelbuettel.com/code/rcpp.armadillo.html)
-- [Rcpp for everyone](https://teuder.github.io/rcpp4everyone_en/)
-
-
-## C++ syntax
-
-- Each statement must be ended by a semicolon.
-- Single-line comments start with two forward slashes `//`.
-- To create a variable, you must specify the type and assign it a value (type variable = value;). Here some examples:
 ```
-int myNum = 5;               // Integer (whole number without decimals)
-double myFloatNum = 5.99;    // Floating point number (with decimals)
-char myLetter = 'D';         // Character
-bool myBoolean = true;       // Boolean (true or false)
-```
-- `bool` data type can take the values `true` (1) or `false` (0).
-- C++ supports the usual logical conditions from mathematics: 
-  - Less than: `a < b`
-  - Less than or equal to: `a <= b`
-  - Greater than: `a > b`
-  - Greater than or equal to: `a >= b`
-  - Equal to `a == b`
-  - Not Equal to: `a != b`
-- The logical operators are: `!`, `&&`, `||`
-- The arithmetic operators are: `+`, `-`, `*`, `/`, `%`
-- Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
-- Increment and decrement: `++`, `--`
-- Conditional ternary operator: `? : `
-The conditional operator evaluates an expression, returning one value if that expression evaluates to `true`, and a different one if the expression evaluates as `false`. Its syntax is:
-```
-condition ? result1; : result2;
-```
-- Use the `if`, `else if`, `else` statements to specify a block of C++ code to be executed if one or more conditions are or not `true`.
-```
-if (condition1) {
-  // block of code to be executed if condition1 is true
-} else if (condition2) {
-  // block of code to be executed if the condition1 is false and condition2 is true
-} else {
-  // block of code to be executed if the condition1 is false and condition2 is false
-}
-```
-- The syntax of the switch statement is a bit peculiar. Its purpose is to check for a value among a number of possible constant expressions. It is something similar to concatenating `if-else` statements, but limited to constant expressions. Its most typical syntax is:
-```
-switch (expression)
-{
-  case constant1:
-     group-of-statements-1;
-     break;
-  case constant2:
-     group-of-statements-2;
-     break;
-  .
-  .
-  .
-  default:
-     default-group-of-statements
-}
-```
-It works in the following way: switch evaluates expression and checks if it is equivalent to `constant1`; if it is, it executes `group-of-statements-1` until it finds the `break` statement. When it finds this break statement, the program jumps to the end of the entire switch statement (the closing brace).
-
-- When you know exactly how many times you want to loop through a block of code, use the `for` loop.
-```
-for (statement 1; statement 2; statement 3) {
-  // code block to be executed
-}
-```
-- The while loop loops through a block of code as long as a specified condition is true.
-```
-while (condition) {
-  // code block to be executed
-}
-```
-
-For more details we recommend a few pages of [www.cplusplus.com](https://www.cplusplus.com/) about:
-
-- [Variables](https://www.cplusplus.com/doc/tutorial/variables/)
-- [Operators](https://www.cplusplus.com/doc/tutorial/operators/)
-- [Statements](https://www.cplusplus.com/doc/tutorial/control/)
-
-## Usual numeric functions
-
-The most popular functions of the `cmath` library, which is included in the package, are the following: 
-
-- Exponential and logarithm functions: `exp(x)`, `log(x)` (natural logarithm)
-- Trigonometric functions: `cos(x)`, `sin(x)`, `tan(x)`
-- Power functions: `pow(x, a)` meaning $x^a$ and `sqrt(x)` meaning $\sqrt{x}$
-- Absolute value: `abs(x)`
-- Truncation functions: `ceil(x)` meaning $\lceil x \rceil$ and `floor(x)` meaning $\lfloor x \rfloor$
-- Bivariate functions: `max(x, y)` and `min(x,y)` 
-
-Note that these functions are not vectorial, the arguments `x` and `y` must be scalar. If the user wants to call some other functions of `cmath` not listed in the table, this is possible by adding the prefix `std::` to the name of the function (scope resolution operator `::` to access to functions declared in namespace standard `std`). 
-
-## Individuals characteristics and model parameters: link between R and C++ {#cppcharacteristics}
-
-To facilitate the model creation, the individuals' characteristics and a list model parameters can be declared in the R environment and used in the C++ code. 
-
-The data shared between the R environment and the C++ code are: 
-
-* The characteristics of the individuals which must be atomic (Boolean, scalar or character).
-* The model parameters: a list of variables of type:
-    - Atomic, vector or matrix.
-    - Predefined real functions of one variable, or list of such functions. 
-    - Piecewise real function of two variables, of list of such. 
-
-### Atomic types (characteristics and parameters)
-Here is the conversion table used between the atomic types of R and C++. 
-
-<center>
-|C++ type|R type|
-|:---|:---|
-|bool|`logical`|
-|int|`integer`|
-|double|`double`|
-|char|`character`|
-</center>
-
-**Individuals characteristics** 
-
-The characteristics of an individual are defined by a named character vector containing the name of the characteristic and the associated C++ type. The function `?get_characteristics` provides a way to extract the characteristics from a population data frame.
-
-```r
-library(IBMPopSim)
-pop <- IBMPopSim::EW_popIMD_14$sample
-get_characteristics(pop)
-##   male    IMD 
-## "bool"  "int"
-```
-The requires `birth` and `death` characteristics are of type `double`. 
-
-**Atomic model parameters** 
-
-The model parameters are given by a named list of R objects. We recall that the type of an R object can be determined by calling  the `?typeof` function. Atomic objects declared as model parameters can be directly used in the C++ code.   
-In the example below, the variable `code` contains simple C++ instructions depending on the parameters defined in `params`. The `summary` of the model `mod` gives useful information on the types of characteristics and parameters used in C++ code. 
-
-```r
-params <- list("lambda" = 0.02, "alpha" = 0.4, "mu" = as.integer(2))
-code <- "result = lambda + alpha * (age(I, t) + mu);"
-event_birth <- mk_event_individual("birth", intensity_code = code)
-mod <- mk_model(get_characteristics(pop), events = list("birth" = event_birth), 
-                parameters = params, with_compilation = FALSE)
-summary(mod)
-## Events:
-## #1: individual event of type birth
-## --------------------------------------- 
-## Individual description:
-## names:  birth death male IMD 
-## R types:  double double logical integer 
-## C types:  double double bool int
-## --------------------------------------- 
-## R parameters available in C++ code:
-## names:  lambda alpha mu 
-## R types:  double double integer 
-## C types:  double double int
-```
-
-
-
-### Vectors and matrices (model parameters) {#cpparmadillo}
-
-Two of the possible model parameters types given in the argument `parameters` of the `?mk_model` function are R vectors and R matrices. We call R vector a `numeric` of length at least 2. These types are converted, using the [RcppArmadillo library](http://dirk.eddelbuettel.com/code/rcpp.armadillo.html), in C++ [Armadillo](http://arma.sourceforge.net/) types, `arma::vec` and `arma::matrix` respectively. 
-
-The classes `arma::vec` and `arma::matrix` are rich and easy-to-use implementations of one-dimensional and two-dimensional arrays. To access to individual elements of an array, use the operator `()` (or `[]` in dimension 1).
-
-- `(n)` or `[n]` for `arma::vec`, access the n-th element. 
-- `(i,j)` for `arma::matrix`, access the element stored at the $i$-th row and $j$-th column.
-
-**Warning:** The first element of the array is indexed by subscript of 0 (in each dimension).
-
-Another standard way (in C++) to access elements is to used iterators. An iterator is an object that, pointing to some element in a range of elements, has the ability to iterate through the elements of that range using a set of operators (see [more details on iterators](https://teuder.github.io/rcpp4everyone_en/290_iterator.html)).
-
-Let `v` be a an object of type `arma::vec` and A be a an object of type `arma::matrix`. Here we show how to get the begin and the end iterators of these objects.
-
-- `v.begin()`: iterator pointing to the begin of `v` 
-- `v.end()`: iterator pointing to the end of `v`
-- `A.begin_row(i)`: iterator pointing to the first element of row `i` 
-- `A.end_row(i)`: iterator pointing to the last element of row `i` 
-- `A.begin_col(i)`: iterator pointing to the first element of column `i` 
-- `A.end_col(i)`: iterator pointing to the last element of column `i` 
-
-### Predefined functions (model parameters) {#cppIBMfunctions}
-
-To facilitate the implementation of intensity functions and kernel code, R functions have been predefined in `IBMPopSim`, which can be  defined as model parameters and then called in the C++ code.  The goal is to make their use as transparent as possible. 
-
-#### Real functions of one variable 
-
-Here is a list of such functions that can be  defined as a R object and called from R and C++. 
-
-- `stepfun`: Step function.
-- `linfun`: Linear interpolation function.
-- `gompertz`: Gompertz–Makeham intensity function.
-- `weibull`: Weibull density function.
-- `piecewise_x`: Piecewise real function.
-
-See the reference manual for mathematical definitions of these functions (`?stepfun`).   
-Once the model is created, these predefined functions are transformed into C++ functions, identified as `function_x`. 
-
-We illustrate below some examples of the use of these functions: 
-
-1. We define `dr` a `stepfun` depending on some values in `EW_pop_14$rates`. Note that this function applies to an age `a`.
-
-```r
-dr <- with(EW_pop_14$rates,
-           stepfun(x = death_male[,"age"], y = c(0, death_male[,"value"])))
-plot(dr, xlab="age", ylab="dr", main="Example of step function")
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("plot_stepfun-1.pdf")
-```
-
-We can also initialize a piecewise real function `f` defined by the function `dr` before age 80, and by a Gompertz-Makeham intensity function for ages after 80. 
-
-```r
-f <- piecewise_x(80, list(dr, gompertz(0.00006, 0.085)))
-x <- seq(40, 110)
-plot(x, sapply(x, f), xlab="age", ylab="f", main="Example of piecewise function")
-```
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("plot_piecewise-1.pdf")
-```
-
-2. Once a function has been created and defined as model parameter,  a model depending on the function can be defined. For example we use in the model below the `stepfun`  `dr` as a model parameter named `rate`. The function is used to defined the intensity of death events in the model.
-s
-
-```r
-params <- list("rate" = dr)
-event <- mk_event_individual("death", intensity_code = "result = rate(age(I, t));")
-mod <- mk_model(get_characteristics(pop), events = list("death" = event), 
-                parameters = params, with_compilation = FALSE)
-summary(mod)
-## Events:
-## #1: individual event of type death
-## --------------------------------------- 
-## Individual description:
-## names:  birth death male IMD 
-## R types:  double double logical integer 
-## C types:  double double bool int
-## --------------------------------------- 
-## R parameters available in C++ code:
-## names:  rate 
-## R types:  closure 
-## C types:  function_x
-```
-
-3. After compilation, the parameter `rate` can actually be replaced by any function of type `function_x`. For example you can call 
-```
-popsim(mod, pop, params = list("rate" = dr), age_max = 120, 
-       events_bounds = c("death" = dr(age_max)), time = 10)
-```
-as well as 
-```
-popsim(mod, pop, params = list("rate" = f), age_max = 120, 
-       events_bounds = c("death" = f(age_max)), time = 10)
-```
-
-#### Piecewise real functions of two variables
-
-In the C++ code these R functions declared with  `?piecewise_xy` are identified as `function_xy` functions. See `?piecewise_xy` for mathematical definition. This function allows to easily define a step function that depend on age and time. 
-
-#### List of functions 
-
-As parameter you can use a list of functions. All R functions in the list must be of the same C++ type: either `function_x` or `function_xy`. In C++ code the list of functions is replaced by a `std::vector` of `function_x` or `function_xy` (with first element indexed by 0).
-
-## Random variables {#randomvar}
-
-We use the following notations to describe the available C++ random distributions, which can be used in the C++ intensity and kernel codes. 
-
-- $\mathcal{U}(a,b)$ : Uniform distribution on $[a, b]$ with $a < b$
-- $\mathcal{E}(\lambda)$ : Exponential distribution, $\lambda > 0$
-- $\mathcal{N}(\mu,\sigma)$ : Gaussian distribution, $\mu, \sigma \in \mathbf{R}$
-- $\mathrm{Pois}(\lambda)$: Poisson distribution, $\lambda > 0$
-- $\Gamma(\alpha, \beta)$: Gamma distribution, $\alpha > 0$, $\beta > 0$
-- $\mathrm{Weib}(a, b)$: Weibull distribution, $a > 0$, $b > 0$
-
-- $\mathcal{U}\{a, b\}$: Discrete uniform distribution on $\{a, a+1, \dots, b\}$ with $a < b$
-- $\mathcal{B}(p)$: Bernoulli distribution, the probability of success is $p \in (0,1)$
-- $\mathcal{B}(n, p)$: Binomial distribution $n \ge 1$, $p \in (0,1)$
-- $\mathcal{D}_n$ : Discrete distribution with values in $\{ 0, \dots, n-1 \}$ and with probabilities $\{p_0, \dots, p_{n-1}\}$.
-
-In the table below we show how to call them, which means how to make independent realizations of these random variables, and we give the reference to the C++ corresponding function of the [random library ](http://www.cplusplus.com/reference/random/) hidden in this call. 
-
-<center>
-| Function call | Meaning | C++ [`random`](http://www.cplusplus.com/reference/random/) internal function |
-|:---|:---|:---|
-|CUnif($a=0, b=1$) | $\mathcal{U}(a,b)$|[`uniform_real_distribution<double>`](http://www.cplusplus.com/reference/random/uniform_real_distribution/) |
-|CExp($\lambda=1$) | $\mathcal{E}(\lambda)$|[`exponential_distribution<double>`](http://www.cplusplus.com/reference/random/exponential_distribution/)|
-|CNorm($\mu=0, \sigma=1$)|$\mathcal{N}(\mu,\sigma)$|[`normal_distribution<double>`](http://www.cplusplus.com/reference/random/normal_distribution/)|
-|CPoisson($\lambda=1$)|$\mathrm{Pois}(\lambda)$|[`poisson_distribution<unsigned>`](http://www.cplusplus.com/reference/random/poisson_distribution/)|
-|CGamma($\alpha=1, \beta=1$)|$\Gamma(\alpha,\beta)$|[`gamma_distribution<double>`](http://www.cplusplus.com/reference/random/gamma_distribution/)|
-|CWeibull($a=1$, $b=1$)|$\mathrm{Weib}(a,b)$|[`weibull_distribution<double>`](http://www.cplusplus.com/reference/random/weibull_distribution/)|
-|CUnifInt($a=0, b=2^{31}-1$)|$\mathcal{U}\{a,b\}$|[`uniform_int_distribution<int>`](http://www.cplusplus.com/reference/random/uniform_int_distribution/)|
-|CBern($p=0.5$)|$\mathcal{B}(p)$|[`bernoulli_distribution`](http://www.cplusplus.com/reference/random/bernoulli_distribution/)|
-|CBinom($n=1, p=0.5$)|$\mathcal{B}(n,p)$|[`binomial_distribution<int>`](http://www.cplusplus.com/reference/random/binomial_distribution/)|
-|CDiscrete(`p_begin`, `p_end`)|$\mathcal{D}_n$|[`discrete_distribution<int>`](http://www.cplusplus.com/reference/random/discrete_distribution/)|
-</center>
-
-In the discrete distribution call `CDiscrete(p_begin, p_end)`, the arguments `p_begin` and `p_end` represent the iterators to the begin and to the end of an array which contains $\{p_0, \dots, p_{n-1}\}$. Note that the use of iterators is a convenient and fast way to access a column or row of a matrix `arma::mat`.
 
 # References
 

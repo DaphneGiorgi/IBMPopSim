@@ -19,7 +19,7 @@ Function which associes \code{x} to \eqn{\alpha exp(\beta x) + \lambda}.
 \description{
 The intensity function (or hazard function) for the Gompertz-Makeham law of mortality distribution is defined as
 \deqn{h(x) = \alpha e^{\beta x} + \lambda}
-with \eqn{\alpha, \beta, \lambda \in \mathbb{R}_+}.
+with \eqn{\alpha, \beta, \lambda \in {R}_+}.
 }
 \details{
 A C++ version of this function is available. See \code{vignette('IBMPopSim_cpp')} for more details.

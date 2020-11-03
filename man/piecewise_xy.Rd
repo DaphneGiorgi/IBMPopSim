@@ -18,7 +18,7 @@ Piecewise bivariate function built with the given intervals and functions.
 Given the vectors \verb{(breaks[1],...,breaks[n])} and the list of \code{IBMPopSim} compatible
 functions \verb{funs = (f[0],f[1],...,f[n])} (one value more!), \code{piecewise_xy(breaks, funs)} returns
 the function
-\deqn{f(x,y) = f_0(x) \mathbb{1}_{y\le breaks[1]}+\sum_{k=1}^{n-1} f_k(x) \mathbb{1}_{[breaks_{k}, breaks_{k+1})}(y) + f_n(x)\mathbb{1}_{y \ge breaks[n]}}
+\deqn{f(x,y) = f_0(x) {1}_{y\le breaks[1]}+\sum_{k=1}^{n-1} f_k(x) {1}_{[breaks_{k}, breaks_{k+1})}(y) + f_n(x){1}_{y \ge breaks[n]}}
 }
 \details{
 A C++ version of this function is available. See \code{vignette('IBMPopSim_cpp')} for more details.
