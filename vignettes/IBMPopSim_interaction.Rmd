@@ -256,7 +256,8 @@ ggplot(pop_out) + geom_segment(
                 ylab("Birth size")
 ```
 
-<img src="inter_output2-1.png")
+```{r, echo=FALSE, fig.align='center'}
+knitr::include_graphics("inter_output2-1.png")
 ```
 
 # Simulation with different parameters
@@ -301,8 +302,10 @@ ggplot(pop_out) +
   xlab("Time") + ylab("Birth size")
 ```
 
-<img src="inter_output3-1.png")
+```{r, echo=FALSE, fig.align='center'}
+knitr::include_graphics("inter_output3-1.png")
 ```
+
 
 **Evolution of age pyramid by birth size**
 
@@ -352,7 +355,8 @@ names(colors) <- lbls
 plot_pyramid(pyr, group_colors = colors, group_legend = 'Birth size')
 ```
 
-<img src="inter_pyramid-1.png")
+```{r, echo=FALSE, fig.align='center'}
+knitr::include_graphics("inter_pyramid-1.png")
 ```
 
 Due to the interaction between individuals, only bigger individuals survive at higher ages.
@@ -439,7 +443,8 @@ ggplot(sim_out$population) +
   ylab("Birth size")
 ```
 
-<img src="inter_output-1.png")
+```{r, echo=FALSE, fig.align='center'}
+knitr::include_graphics("inter_output-1.png")
 ```
 
 # Model with "full" simulation algorithm

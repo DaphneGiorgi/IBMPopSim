@@ -350,7 +350,7 @@ legend(x="bottomrigh", legend=c("Estimated mortality rates", "Point forecast"),
 knitr::include_graphics("insur_LeeCarter_risk1-1.pdf")
 ```
 
-### Global portofolio
+### Global portfolio
 
 Due to the mortality differential between risk class 1 and 2, there should be more individuals in risk class 2 at higher ages.
 However, due to exit events, more individuals in risk class 1 one exit the portfolio over time, leading to a higher proportion of individuals in risk class 1 at higher ages than expected when there are no exit events. Thus, mortality rates are closer to mortality rates in risk class 1 at higher ages.

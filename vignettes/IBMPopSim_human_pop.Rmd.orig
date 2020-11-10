@@ -351,7 +351,7 @@ mean(pop_female_time$children) #Mean number of children
 
 # Addition of "cause of death" characteristics
 
-In order to model different competing  causes of death, several death events can be created, each modelling one cause of death.
+In order to model different competing  causes of death, several death events can be created, each modeling one cause of death.
 
 ## Model with two independent causes of death
 

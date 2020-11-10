@@ -119,7 +119,7 @@ exposure_table <- function(population,ages,period){
 #' A function returning a merged dataframe from a list of population dataframes with id.
 #'
 #' @param pop_df_list A list of population dataframe where the first three columns of each dataframe are id, birth and death.
-#' @param char_ignored A vector of characteristics names which are only kept from the firt element of pop_df_list.
+#' @param char_ignored A vector of characteristics names which are only kept from the first element of pop_df_list.
 #'
 #' @return A dataframe composed of all individuals with their characteristics at each simulation time.
 #'

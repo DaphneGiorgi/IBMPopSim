@@ -46,7 +46,7 @@ age_pyramid <- function(population, time = 0, ages = c(0:110, Inf))
 
 #' Age pyramid from a population data frame at some given times.
 #'
-#' @description Vectorial version in time of the function \code{\link{age_pyramid}}. Not compatible with IBMs including swap events. 
+#' @description Vectorial version in time of the function \code{\link{age_pyramid}}. Not compatible with IBMs including swap events.
 #' @inheritParams age_pyramid
 #' @param time The age pyramid is computed at instants \code{time}. Must be a numeric vector of greater than or equal to 0.
 #'
@@ -87,12 +87,13 @@ age_pyramids <- function(population, time = 0, ages = c(0:110,Inf)) {
 #'\donttest{
 #' library(colorspace)
 #' pyr_IMD <- subset(EW_popIMD_14$age_pyramid, as.numeric(age) <= 110)
-#' pyr_IMD$group <- with(pyr_IMD, ifelse(male, paste('Males - IMD', IMD), paste('Females - IMD', IMD)))
+#' pyr_IMD$group_name <- with(pyr_IMD, ifelse(male, paste('Males - IMD', IMD),
+#'                           paste('Females - IMD', IMD)))
 #' colors <- c(sequential_hcl(n=5, palette = "Magenta"),
 #'             sequential_hcl(n=5, palette = "Teal"))
 #' names(colors) <- c(paste('Females - IMD', 1:5),
 #'                    paste('Males - IMD', 1:5))
-#' # note that you must have setequal(names(colors), pyr_IMD$group) is TRUE
+#' # note that you must have setequal(names(colors), pyr_IMD$group_name) is TRUE
 #' plot_pyramid(pyr_IMD, colors)
 #'}
 #' @export

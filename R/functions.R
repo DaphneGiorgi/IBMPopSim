@@ -64,7 +64,7 @@ linfun <- function(x, y, yleft = y[1], yright = y[length(y)]) {
 #'
 #' @eval details_cpp()
 #'
-#' @return Function which associes \code{x} to \eqn{\alpha exp(\beta x) + \lambda}.
+#' @return Function which associates \code{x} to \eqn{\alpha exp(\beta x) + \lambda}.
 #'
 #' @seealso <https://en.wikipedia.org/wiki/Gompertz%E2%80%93Makeham_law_of_mortality>
 #'

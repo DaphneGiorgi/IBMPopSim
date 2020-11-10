@@ -30,11 +30,11 @@ The \code{type} argument is one of the following
 \item{\code{'death'}}{By default, the individual \code{I} dies. Optional code can be precised in \code{kernel_code}.}
 \item{\code{'entry'}}{A new individual \code{newI} is added to the population, and its characteristics have to be defined by the user in the entry \code{kernel_code}.}
 \item{\code{'exit'}}{An individual \code{I} exits from the population. Optional code can be precised in \code{kernel_code}.}
-\item{\code{'swap'}}{The user can change the caracteristics of the selected individual \code{I}. This requires \code{kernel_code}.}
+\item{\code{'swap'}}{The user can change the characteristics of the selected individual \code{I}. This requires \code{kernel_code}.}
 \item{\code{'custom'}}{None of the above types, the user defines \code{kernel_code} that can act on the selected individual \code{I} and on the population \code{pop}.}
 }
 
-The \code{kernel_code} argument is a string containing some C++ code which describing the action of the event. Some of available variables in the C++ code are: \code{t} (the current time), \code{pop} (the current population), \code{I} (the current individual selected for the event), \code{newI} (the new indivudal if \code{'birth'} or \code{'entry'} event), the name of the model parameters (some variables, or functions, see \code{\link{mk_model}}).
+The \code{kernel_code} argument is a string containing some C++ code which describing the action of the event. Some of available variables in the C++ code are: \code{t} (the current time), \code{pop} (the current population), \code{I} (the current individual selected for the event), \code{newI} (the new individual if \code{'birth'} or \code{'entry'} event), the name of the model parameters (some variables, or functions, see \code{\link{mk_model}}).
 See \code{vignette('IBMPopSim')} for more details.
 }
 \examples{

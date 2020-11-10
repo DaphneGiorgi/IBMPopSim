@@ -37,12 +37,13 @@ plot_pyramid(subset(EW_pop_14$age_pyramid, as.numeric(age) <= 110))
 \donttest{
 library(colorspace)
 pyr_IMD <- subset(EW_popIMD_14$age_pyramid, as.numeric(age) <= 110)
-pyr_IMD$group <- with(pyr_IMD, ifelse(male, paste('Males - IMD', IMD), paste('Females - IMD', IMD)))
+pyr_IMD$group_name <- with(pyr_IMD, ifelse(male, paste('Males - IMD', IMD),
+                          paste('Females - IMD', IMD)))
 colors <- c(sequential_hcl(n=5, palette = "Magenta"),
             sequential_hcl(n=5, palette = "Teal"))
 names(colors) <- c(paste('Females - IMD', 1:5),
                    paste('Males - IMD', 1:5))
-# note that you must have setequal(names(colors), pyr_IMD$group) is TRUE
+# note that you must have setequal(names(colors), pyr_IMD$group_name) is TRUE
 plot_pyramid(pyr_IMD, colors)
 }
 }

@@ -251,7 +251,7 @@ Individuals can move during their lifetime, and thus change of IMD subgroup (swa
 
 We assume that an individual can change of IMD subgroup with an intensity depending on his age and IMD subgroup.
 
-Young individuals in the age class $[15,30]$ and in the less deprived IMD quintiles (1 and 2) can move to more deprived areas, for instance for studying. On the other hand, older individuals in the age class $[30,45]$ and $[0,15]$, and in deprived areas can move to a less deprived area, modelling for instance  family formation, moving out to less deprived areas.
+Young individuals in the age class $[15,30]$ and in the less deprived IMD quintiles (1 and 2) can move to more deprived areas, for instance for studying. On the other hand, older individuals in the age class $[30,45]$ and $[0,15]$, and in deprived areas can move to a less deprived area, modeling for instance  family formation, moving out to less deprived areas.
 
 Age-specific swap intensities are given by 5 step functions, one for each IMD subgroup.  When a swap event occur, the new IMD subgroup of the individual is determined by a discrete random variable depending on his  age.
 
@@ -492,7 +492,7 @@ knitr::include_graphics("hpIMD_pyramids-2.pdf")
 ```
 
 <!--```{remark}-->
- The high number of individuals aged over 100 is due to the fact that mortality rates are assumed to be constant at ages over 90, which is of course not realistic for human populations (see `vignette('IBMPopSim_human_pop')`) for another choice of moratlity rates.
+ The high number of individuals aged over 100 is due to the fact that mortality rates are assumed to be constant at ages over 90, which is of course not realistic for human populations (see `vignette('IBMPopSim_human_pop')`) for another choice of mortality rates.
 <!--```-->
 
 ## Evolution of population composition by age group

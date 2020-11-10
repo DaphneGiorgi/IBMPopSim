@@ -14,7 +14,7 @@ gompertz(alpha, beta, lambda = 0)
 \item{lambda}{Non-negative real parameter.}
 }
 \value{
-Function which associes \code{x} to \eqn{\alpha exp(\beta x) + \lambda}.
+Function which associates \code{x} to \eqn{\alpha exp(\beta x) + \lambda}.
 }
 \description{
 The intensity function (or hazard function) for the Gompertz-Makeham law of mortality distribution is defined as

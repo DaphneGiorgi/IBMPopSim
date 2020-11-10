@@ -43,7 +43,7 @@ In IBMPopSim, the population can evolve according to six main types of events:
 * **Birth event**: addition of an individual of age 0 to the population.
 * **Death event**: removal of an individual from the population.
 * **Entry event**: arrival of an individual in the population.
-* **Exit (emmigration) event**: exit from the population (other than death).
+* **Exit (emigration) event**: exit from the population (other than death).
 * **Swap event**: an individual changes of characteristics.
 * **Custom event**.
 
@@ -176,7 +176,7 @@ In order to define a model, the user must specify three building blocks:
 
 * An initial population (see Section \@ref(population)),
 * The model parameters (see Section \@ref(params)),
-* The different events thant can occur and their intensity (see Section \@ref(events)).
+* The different events that can occur and their intensity (see Section \@ref(events)).
 
 The model can then be created from these three blocks.
 

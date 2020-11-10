@@ -52,7 +52,7 @@ birth_event <- mk_event_individual(type = 'birth',
                                     else result=birth_rate(age(I,t));",
                                   kernel_code = "newI.male = CUnif(0, 1) < p_male;")
 
-model <- mk_model(characteristics = get_characteristics(population_df),
+model <- mk_model(characteristics = get_characteristics(EW_pop_14$sample),
                  events = list(death_event,birth_event),
                  parameters = params)
 

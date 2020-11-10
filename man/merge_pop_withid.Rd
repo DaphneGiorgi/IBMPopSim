@@ -9,7 +9,7 @@ merge_pop_withid(pop_df_list, char_ignored = NULL)
 \arguments{
 \item{pop_df_list}{A list of population dataframe where the first three columns of each dataframe are id, birth and death.}
 
-\item{char_ignored}{A vector of characteristics names which are only kept from the firt element of pop_df_list.}
+\item{char_ignored}{A vector of characteristics names which are only kept from the first element of pop_df_list.}
 }
 \value{
 A dataframe composed of all individuals with their characteristics at each simulation time.
