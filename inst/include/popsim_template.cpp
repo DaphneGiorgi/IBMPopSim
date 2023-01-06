@@ -121,8 +121,6 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
     std::seed_seq seq { seed };
     seq.generate(seeds.begin(), seeds.end());
 
-    auto start = std::chrono::system_clock::now();
-
     // ***** INITIALISATION_POPULATION
     _INITIALISATION_POPULATION_
     // *****
@@ -136,14 +134,10 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
     };
     // *****
 
-    auto end = std::chrono::system_clock::now();
-
     std::vector<std::thread> threads(num_threads);
     std::vector<counter> counters(num_threads);
     std::vector<population> pops = split(pop, num_threads);
 
-    std::chrono::duration<double> elapsed_seconds = end-start;
-    double secs_initialize = elapsed_seconds.count();
     if (verbose) {
         std::cout << "before main algorithm \t" << std::endl;
         std::cout << "parameters age max " << age_max  << std::endl;
@@ -151,8 +145,7 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
         std::cout << "parameters clean_ratio " << clean_ratio  << std::endl;
         std::cout << "parameters num_threads " << num_threads  << std::endl;
     }
-    start = std::chrono::system_clock::now();
-
+    auto start = std::chrono::system_clock::now();
     // Main algorithm
     for (unsigned k = 0; k < num_threads; ++k) {
         cntxt.__gen.seed(static_cast<uint64_t>(seeds[2*k]) << 32 | seeds[2*k+1]);
@@ -167,9 +160,8 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
                 });
     }
     for (auto & th : threads) th.join();
-
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
+    auto end = std::chrono::system_clock::now();
+    auto elapsed_seconds = end-start;
     double secs_main_algorithm = elapsed_seconds.count();
 
     pop = merge(pops);
@@ -177,12 +169,8 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
     for (auto & Cs : counters) C += Cs;
 
     // ***** OUTPUT_POPULATION
-    start = std::chrono::system_clock::now();
     _OUTPUT_POPULATION_
     // *****
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    double secs_finalize = elapsed_seconds.count();
 
     Rcpp::NumericVector logs = Rcpp::NumericVector::create(
             Rcpp::Named("proposed_events")= C.proposedEvents,

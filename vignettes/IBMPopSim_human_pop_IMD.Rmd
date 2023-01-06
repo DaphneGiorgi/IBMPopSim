@@ -108,11 +108,6 @@ Death intensities are based on EW 2014 age specific death rates by gender and IM
 Death rates are lower in less deprived quintiles.
 
 
-```r
-ggplot(EW_popIMD_14$death_rates$male, aes(x=age,y=log(value),color=factor(IMD)))+
-geom_step()+scale_color_discrete(name="IMD quintile")+ylab("Males log death rates")
-```
-
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_death_rate-1.pdf")
 ```
@@ -197,22 +192,6 @@ params_birth <- with(toy_params$birth,
 ```
 
 
-```r
-plot(x=0:50,
-	y=params_birth$TFR_weight[[1]]*params_birth$birth[[1]](0:50-params_birth$a_mean),
-	type="l", xlab="age", ylab="birth intensity", col="green", ylim=c(0,0.16),
-	main="Birth intensities")
-lines(x=0:50,
-	y=params_birth$TFR_weight[[2]]*params_birth$birth[[2]](0:50-params_birth$a_mean),
-	col="red")
-lines(x=0:50,
-	y=params_birth$TFR_weight[[3]]*params_birth$birth[[3]](0:50-params_birth$a_mean),
-	col="blue")
-legend("topright",col=c("green","red","blue"),
-	legend=c("IMD 1 and 2", "IMD 3", "IMD 4 and 5"),
-	bty="n",lwd="2")
-```
-
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_birth_intensities-1.pdf")
 ```
@@ -278,15 +257,9 @@ params_swap <- with(toy_params$swap,
 
 
 ```r
- df_intensities <- melt(data.frame("age"=c(0,15,30,45),toy_params$swap$intensities),
-			id.vars="age")
+ df_intensities <- data.frame("age"=c(0,15,30,45),toy_params$swap$intensities)
 ```
 
-
-```r
-ggplot(df_intensities, aes(x=age,y=value,color=variable))+geom_step()+
-scale_color_discrete(name="Origin IMD quintile")+ylab("swap intensity")
-```
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_df-1.pdf")
@@ -479,6 +452,7 @@ names(colors) <- c(paste('Females - IMD', 1:5),
 plot_pyramid(pyr_init,colors)
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_pyramids-1.pdf")
 ```
@@ -486,6 +460,7 @@ knitr::include_graphics("hpIMD_pyramids-1.pdf")
 ```r
 plot_pyramid(pyr_IMD,colors)
 ```
+
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_pyramids-2.pdf")
@@ -509,15 +484,6 @@ compo_pop_fem <- age_pyr_fem %>%
 		mutate(composition = value/sum(value))
 ```
 
-
-```r
-ggplot(compo_pop_fem, aes(x=as.integer(time),y=composition,colour=as.factor(IMD)))+
-geom_line()+
-facet_wrap("Age group"~age)+
-scale_y_continuous(labels = scales::percent)+
-xlab("Time")+
-ylab("Proportion of females in IMD subgroup")
-```
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_compo_fem-1.pdf")
@@ -555,34 +521,9 @@ compo_pop_fem_nosw <- filter(bind_rows(age_pyrs_nosw,.id="time"), male==FALSE) %
 ```
 
 
-```r
-#  Without swap events
-ggplot(compo_pop_fem_nosw, aes(x=as.integer(time),y=perc,colour=as.factor(IMD)))+
-geom_line()+
-facet_wrap(~age)+
-scale_y_continuous(labels = scales::percent, limits = c(0.12,0.3))+
-xlab("Time")+
-ylab("Proportion of females in IMD subgroup")+
-labs(title = "Population without swap events")
-```
-
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_compo_fem2-1.pdf")
 ```
-
-```r
-
-
-## With swap events
-ggplot(compo_pop_fem, aes(x=as.integer(time),y=composition,colour=as.factor(IMD)))+
-geom_line()+
-facet_wrap("Age group"~age)+
-scale_y_continuous(labels = scales::percent,limits = c(0.12,0.3))+
-xlab("Time")+
-ylab("Proportion of females in IMD subgroup")+
-labs(title = "Population with swap events")
-```
-
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("hpIMD_compo_fem2-2.pdf")
 ```
@@ -618,11 +559,11 @@ sim_out_id <- popsim(model_id,
 
 When each individual has been attributed a unique id, a data frame summarizing each life course can be obtained from the simulation output `sim_out_id$population`(list of data frames) by calling the function `merge_pop_withid`.
 
-Characteristics such as gender which don't change over time can be specified in the argument `char_ignored`.
+Characteristics to be tracked over time must be specified in the argument `chars_tracked`.
 
 
 ```r
-pop_id <- merge_pop_withid(sim_out_id$population,char_ignored = c("male"))
+pop_id <- merge_pop_withid(sim_out_id$population, chars_tracked = "IMD")
 ```
 
 `pop_id` is data frame in which each line corresponds to an individual and include his id, birth date, death date, gender and IMD subgroup at each discretization time (components of $t_{sim}$).
@@ -630,39 +571,32 @@ pop_id <- merge_pop_withid(sim_out_id$population,char_ignored = c("male"))
 
 ```r
 head(pop_id)
-##   id       birth death  male IMD_1 IMD_2 IMD_3 IMD_4 IMD_5 IMD_6 IMD_7 IMD_8 IMD_9 IMD_10
-## 1  1 -0.09170591    NA FALSE     5     5     5     5     5     5     5     5     5      5
-## 2  9 -0.75010045    NA  TRUE     5     5     5     5     5     5     5     5     5      5
-## 3 17 -0.26214821    NA  TRUE     4     4     4     4     4     4     4     4     4      4
-## 4 25 -0.08906050    NA  TRUE     5     5     5     5     5     5     5     5     5      5
-## 5 33 -0.10749491    NA  TRUE     3     3     3     3     3     3     3     3     3      3
-## 6 41 -0.43381694    NA FALSE     4     4     4     4     4     4     4     4     2      2
-##   IMD_11 IMD_12 IMD_13 IMD_14 IMD_15 IMD_16 IMD_17 IMD_18 IMD_19 IMD_20 IMD_21 IMD_22
-## 1      5      5      5      5      5      5      5      5      5      5      5      5
-## 2      5      5      5      5      5      5      5      5      5      5      5      5
-## 3      4      4      4      4      4      4      4      4      4      4      4      4
-## 4      5      1      1      1      1      1      1      1      1      1      1      1
-## 5      3      3      3      3      3      3      3      3      3      3      3      3
-## 6      2      2      2      2      2      2      2      2      2      2      2      2
-##   IMD_23 IMD_24 IMD_25 IMD_26 IMD_27 IMD_28 IMD_29 IMD_30 IMD_31 IMD_32 IMD_33 IMD_34
-## 1      5      5      5      5      5      5      5      5      5      5      5      1
-## 2      5      5      5      5      5      5      5      5      5      5      5      5
-## 3      4      4      4      4      4      4      4      4      4      4      4      4
-## 4      1      1      1      1      1      1      1      1      1      1      1      1
-## 5      3      3      3      3      3      3      3      3      3      3      3      3
-## 6      2      2      2      2      2      2      2      2      2      2      2      2
-##   IMD_35 IMD_36 IMD_37 IMD_38 IMD_39 IMD_40 IMD_41 IMD_42 IMD_43 IMD_44 IMD_45 IMD_46
-## 1      1      1      1      1      1      1      1      1      1      1      1      1
-## 2      5      5      5      5      5      5      5      5      5      5      5      5
-## 3      4      4      4      4      4      4      4      4      4      4      4      4
-## 4      1      1      1      1      1      1      1      1      1      1      1      1
-## 5      3      3      3      3      3      3      3      3      3      3      3      3
-## 6      2      2      2      2      2      2      2      2      2      2      2      2
-##   IMD_47 IMD_48 IMD_49 IMD_50
-## 1      1      1      1      1
-## 2      5      5     NA     NA
-## 3      4      4      4      4
-## 4      1      1      1      1
-## 5      3      3      3      3
-## 6      2      2      2      2
+##       id        birth death  male IMD_1 IMD_2 IMD_3 IMD_4 IMD_5 IMD_6 IMD_7 IMD_8 IMD_9 IMD_10 IMD_11 IMD_12
+## 1      1  -0.09170591    NA FALSE     5     5     5     5     5     5     5     5     5      5      5      5
+## 2  20501 -17.89396191    NA FALSE     5     4     1     5     3     1     3     2     5      3      4      2
+## 3  59811 -46.23905106    NA FALSE     1     2     2     5     2     4     5     4     5      1      4      5
+## 4 107435   5.13748862    NA FALSE    NA    NA    NA    NA    NA     1     2     5     1      1      4      3
+## 5  10865  -8.21259434    NA FALSE     5     5     5     1     3     1     1     2     4      2      2      4
+## 6 136812  29.07957063    NA  TRUE    NA    NA    NA    NA    NA    NA    NA    NA    NA     NA     NA     NA
+##   IMD_13 IMD_14 IMD_15 IMD_16 IMD_17 IMD_18 IMD_19 IMD_20 IMD_21 IMD_22 IMD_23 IMD_24 IMD_25 IMD_26 IMD_27 IMD_28
+## 1      5      5      5      5      5      5      5      5      5      5      5      5      5      5      5      5
+## 2      4      5      4      3      5      1      1      1      2      1      4      5      1      5      1      1
+## 3      2      5      5      2      2      2      3      3      4      1      4      5      4      4      2      1
+## 4      1      4      2      3      5      1      1      5      1      1      1      1      3      1      5      5
+## 5      1      3      1      3      5      5      3      1      3      1      2      4      5      2      3      2
+## 6     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA     NA
+##   IMD_29 IMD_30 IMD_31 IMD_32 IMD_33 IMD_34 IMD_35 IMD_36 IMD_37 IMD_38 IMD_39 IMD_40 IMD_41 IMD_42 IMD_43 IMD_44
+## 1      5      5      5      5      5      5      5      5      5      5      5      5      5      5      5      5
+## 2      3      4      4      4      2      1      1      3      4      4      3      1      1      1      3      2
+## 3      1      4      5      5      2      4      2      1      2      1      1      5      2      5      2      1
+## 4      4      5      5      2      1      1      5      2      2      3      4      3      3      5      3      4
+## 5      5      2      4      2      1      5      3      2      1      4      4      4      4      2      1      3
+## 6     NA      4      1      3      2      5      5      1      1      2      3      5      4      5      3      1
+##   IMD_45 IMD_46 IMD_47 IMD_48 IMD_49 IMD_50
+## 1      5      5      5      5      5      5
+## 2      4      1      3      1      1      5
+## 3      4      2      3      1      1      2
+## 4      4      4      3      1      1      3
+## 5      2      4      1      3      1      2
+## 6      3      1      1      3      2      4
 ```

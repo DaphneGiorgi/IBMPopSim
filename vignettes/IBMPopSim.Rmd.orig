@@ -251,15 +251,11 @@ The  argument `kernel_code` is `NULL` by default and doesn't have to be specifie
 
 1. **Death event**
 
-If the user defines a **death event**, the C++ code generated is
-
-`pop.kill(k, t);`
-
-which removes the individual number `k` from the population `pop` if he dies. No  kernel has to be specified by the user.
+If the user defines a **death event**, the death date of the current individual `I`  is set to the current time `t`. No kernel has to be specified by the user.
 
 2. **Exit event**
 
-If an **exit event** is defined, a characteristic `out` is automatically added to individuals in the population. When  an individual `I` exit the population, `I.out` is set `TRUE` and his exit time is recorded as a "death" date.
+If an **exit event** is defined, a characteristic `out` is automatically added to individuals in the population. When  an individual `I` exits the population, `I.out` is set to `TRUE` and his exit time is recorded as a "death" date.
 
 3. **Birth event**
 
@@ -767,7 +763,7 @@ These data frames can be merged into a single data frame summarizing the life co
 
 ```{r}
 pop_list <- sim_out_id$population
-pop_merge <- merge_pop_withid(pop_list)
+pop_merge <- merge_pop_withid(pop_list, chars_tracked='sub_grp')
 head(pop_merge)
 ```
 

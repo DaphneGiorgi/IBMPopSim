@@ -227,7 +227,7 @@ pop_size
 Result from [@MR2562651] can be reproduce from the simulation.
 For each individual in the population, we draw below a line representing its birth size during its life time.
 
-```{r, inter_output2}
+```{r, echo=FALSE, inter_output2}
 ggplot(pop_out) + geom_segment(
                     aes(x=birth, xend=death, y=birth_size, yend=birth_size),
                     na.rm=TRUE, colour="blue", alpha=0.1) +

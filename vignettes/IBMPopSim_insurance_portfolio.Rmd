@@ -85,6 +85,7 @@ LCforecastMale <- forecast(LCfitMale, h = t)
 plot(LCforecastMale)
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_forecast-1.pdf")
 ```
@@ -183,7 +184,8 @@ entry_event <- mk_event_poisson(
                    else
                         newI.risk_cls= 2;
                    double a = CUnif(65,70);
-                   newI.set_age(a,t);"
+                   newI.set_age(a,t);
+                   newI.out = false;"
 )
 ```
 
@@ -242,10 +244,10 @@ sim_out <- popsim(model = model,
     time = t,
     age_max = 110,
     multithreading = TRUE)
-## Warning in popsim(model = model, population = pop_df, events_bounds = c(death =
-## death_max, : Add 'entry' attributes to the population.
-## Warning in popsim(model = model, population = pop_df, events_bounds = c(death =
-## death_max, : Add 'out' attributes to the population.
+## Warning in popsim(model = model, population = pop_df, events_bounds = c(death = death_max, : Add 'entry' attributes
+## to the population.
+## Warning in popsim(model = model, population = pop_df, events_bounds = c(death = death_max, : Add 'out' attributes
+## to the population.
 ## Simulation on  [0, 30]
 ```
 
@@ -254,7 +256,7 @@ sim_out <- popsim(model = model,
 
 ```r
 sim_out$logs[["effective_events"]] / sim_out$logs[["proposed_events"]]
-## [1] 0.2511387
+## [1] 0.2510979
 ```
 
 # Outputs
@@ -265,7 +267,7 @@ The characteristics `out` is set to `TRUE` for individuals who left the portfoli
 
 ```r
 str(sim_out$population)
-## 'data.frame':	930799 obs. of  5 variables:
+## 'data.frame':	930085 obs. of  5 variables:
 ##  $ birth   : num  -65 -65 -65 -65 -65 -65 -65 -65 -65 -65 ...
 ##  $ death   : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ risk_cls: int  1 1 1 1 1 1 1 1 1 1 ...
@@ -285,6 +287,7 @@ pyr = age_pyramid(sim_out$population, time = 30, ages=age_grp)
 plot_pyramid(pyr, age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_pyramid-1.pdf")
 ```
@@ -298,6 +301,7 @@ pyr$group_name <- as.character(pyr$group_name)
 colors <- c("1"="#00AFBB","2"="#FC4E07")
 plot_pyramid(pyr,colors,age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
 ```
+
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_pyr_group-1.pdf")
@@ -333,19 +337,6 @@ LCfitSim1 <- fit(LC, Dxt = Dx , Ext = Ex,ages=age_grp[-length(age_grp)])
 ```
 
 
-```r
-time <- 30
-plot(age_grp[-length(age_grp)],
-     LCfitSim1$ax + LCfitSim1$bx*LCfitSim1$kt[t],
-     col="red", main ="Log mortality rates in risk class 1 at t=30",
-     xlab = "age", ylab="log mortality rates")
-lines(age_grp[-length(age_grp)],
-      log(1.3*LCforecastMale$rates[1:(length(age_grp)-1),t]),
-      col="blue")
-legend(x="bottomrigh", legend=c("Estimated mortality rates", "Point forecast"),
-       col=c("red", "blue"),lty=c(NA,1),pch=c(1,NA))
-```
-
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_LeeCarter_risk1-1.pdf")
 ```
@@ -365,21 +356,6 @@ mx_pop <- Dx_pop/Ex_pop
 ```
 
 
-```r
-time <- 30
-plot(age_grp[-length(age_grp)], log((Dx_pop/Ex_pop)[,time]),
-     main = "Portfolio log mortality rates at t=30",
-     xlab = "age", ylab = "log mortality rates")
-lines(age_grp[-length(age_grp)],
-      log(1.3*LCforecastMale$rates[1:(length(age_grp)-1),time]),
-      col = "#00AFBB")
-lines(age_grp[-length(age_grp)],
-      log(0.8*LCforecastMale$rates[1:(length(age_grp)-1),time]),
-      col = "#FC4E07")
-legend(x="bottomrigh", legend=c("Portfolio", "Risk class 1","Risk class 2"),
-       col=c("black","#00AFBB","#FC4E07"), lty=c(NA,1,1), pch=c(1,NA,NA))
-```
-
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_mortality_rates-1.pdf")
 ```
@@ -394,21 +370,13 @@ matplot(age_grp[-length(age_grp)],log(mx_pop),
         type='l', xlab = "age", ylab = "log mortality rates")
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_evol_mortality-1.pdf")
 ```
 
 **Cohort mortality rates**
 
-
-```r
-plot(65:94,log(extractCohort(mx_pop, age= 65, period =0)), type="l")
-lines(65:89,log(extractCohort(mx_pop, age= 65, period =5)), col = "#00AFBB")
-lines(65:84,log(extractCohort(mx_pop, age= 65, period =10)), col="#FC4E07")
-legend(x="bottomrigh",
-       legend=c("Initial cohort", "Age 65 at t=5","Age 65 at t=10"),
-       col=c("black","#00AFBB","#FC4E07"), lty=c(1,1,1))
-```
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("insur_cohort-1.pdf")

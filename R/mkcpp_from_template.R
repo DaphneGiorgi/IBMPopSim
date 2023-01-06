@@ -1,3 +1,5 @@
+#' Function for internal use
+#' @description Build source code for individual creation.
 #' @keywords internal
 mkcpp_declaration_individual <- function(ind_t) {
     file <- system.file("include", "individual_template.cpp", package="IBMPopSim")
@@ -26,12 +28,16 @@ mkcpp_declaration_individual <- function(ind_t) {
     return(code)
 }
 
+#' Function for internal use
+#' @description Capitalize first letter of a word
 #' @keywords internal
 capitalize <- function(x) {
     substr(x, 1, 1) <- toupper(substr(x, 1, 1))
     return(x)
 }
 
+#' Function for internal use
+#' @description Build source code for population initialization.
 #' @keywords internal
 mkcpp_initialisation_population <- function(ind_t) {
     code <- paste0('Rcpp::DoubleVector _birth_date = pop_df["', ind_t$names[1], '"];\n\t')
@@ -42,18 +48,20 @@ mkcpp_initialisation_population <- function(ind_t) {
             code <- paste0(code, code_j)
         }
     }
-    code <- paste0(code, 'for (unsigned k = 0; k < pop_df.nrow(); ++k)\n\t    ')
+    code <- paste0(code, 'for (unsigned _k = 0; _k < pop_df.nrow(); ++_k)\n\t    ')
     code <- paste0(code, 'pop.add_init(individual(')
-    code_individual <- '_birth_date[k]'
+    code_individual <- '_birth_date[_k]'
     if (length(ind_t$names) >= 3) {
         for (j in 3:length(ind_t$names)) {
-            code_individual <- paste0(code_individual, ', _', ind_t$names[j], '[k]')
+            code_individual <- paste0(code_individual, ', _', ind_t$names[j], '[_k]')
         }
     }
-    code <- paste0(code, code_individual, ", _death_date[k]));\n\t")
+    code <- paste0(code, code_individual, ", _death_date[_k]));\n\t")
     return(code)
 }
 
+#' Function for internal use
+#' @description Build source code for output population creation.
 #' @keywords internal
 mkcpp_output_population <- function(ind_t) {
     code_decl <- paste0('if (verbose) std::cout << "Before output conversion " << std::endl;\n\t')
@@ -69,12 +77,12 @@ mkcpp_output_population <- function(ind_t) {
         }
     }
     code_for_indiv <- 'if (verbose) std::cout << "individuals size : " << pop.individuals.size() << std::endl;\n\t'
-    code_for_indiv <- paste0(code_for_indiv, 'for (unsigned k = 0; k < pop.individuals.size(); ++k) {\n\t    ')
-    code_for_indiv <- paste0(code_for_indiv, '_birth_date_out.push_back( pop.individuals[k].birth_date );\n\t    ')
-    code_for_indiv <- paste0(code_for_indiv, '_death_date_out.push_back( pop.individuals[k].death_date );\n\t    ')
+    code_for_indiv <- paste0(code_for_indiv, 'for (unsigned _k = 0; _k < pop.individuals.size(); ++_k) {\n\t    ')
+    code_for_indiv <- paste0(code_for_indiv, '_birth_date_out.push_back( pop.individuals[_k].birth_date );\n\t    ')
+    code_for_indiv <- paste0(code_for_indiv, '_death_date_out.push_back( pop.individuals[_k].death_date );\n\t    ')
     if (length(ind_t$names) >= 3) {
         for (j in 3:length(ind_t$names)) {
-            code_for_indiv <- paste0(code_for_indiv, '_', ind_t$names[j] ,'_out.push_back( pop.individuals[k].', ind_t$names[j], ' );\n\t    ')
+            code_for_indiv <- paste0(code_for_indiv, '_', ind_t$names[j] ,'_out.push_back( pop.individuals[_k].', ind_t$names[j], ' );\n\t    ')
         }
     }
     code_for_indiv <- paste0(code_for_indiv, '}\n\t')
@@ -96,6 +104,8 @@ mkcpp_output_population <- function(ind_t) {
     return(code)
 }
 
+#' Function for internal use
+#' @description Build source code for parameters creation.
 #' @keywords internal
 mkcpp_parameters <- function(parameters, parameters_t) {
     decl_code <- ''
@@ -147,6 +157,8 @@ mkcpp_parameters <- function(parameters, parameters_t) {
     return(list("decl_code" = decl_code, "defn_code" = defn_code))
 }
 
+#' Function for internal use
+#' @description Build source code for event creation.
 #' @keywords internal
 mkcpp_event <- function(event, kernel_type, name_type) {
     event_file <- system.file("include",
@@ -154,11 +166,11 @@ mkcpp_event <- function(event, kernel_type, name_type) {
                               package="IBMPopSim")
     cpp_code <- read_file(event_file)
     kernel_method <- switch(kernel_type,
-        "birth" = "individual newI = I;\n\tnewI.birth_date = t;\n\t_KERNEL_CODE_\n\tpop.add(newI);",
-        "death" = "_KERNEL_CODE_\n\tpop.kill(k, t);",
-        "entry" = "individual newI;\n\t_KERNEL_CODE_\n\tnewI.entry = t;\n\tpop.add(newI);",
+        "birth" = "individual newI = I;\n\tnewI.birth_date = t;\n\t_CORRECTION_IF_ENTRY_\n\t_KERNEL_CODE_\n\tpop.add(newI);",
+        "death" = "_KERNEL_CODE_\n\tpop.kill(_k, t);",
+        "entry" = "individual newI;\n\t_KERNEL_CODE_\n\tnewI.entry = t;\n\t_CORRECTION_IF_EXIT_\n\tpop.add(newI);",
         "swap" = "_KERNEL_CODE_",
-        "exit" = "_KERNEL_CODE_\n\tI.out = true;\n\tpop.kill(k, t);\n",
+        "exit" = "_KERNEL_CODE_\n\tI.out = true;\n\tpop.kill(_k, t);\n",
         "custom" = "_KERNEL_CODE_")
     cpp_code <- gsub("_KERNEL_METHOD_", kernel_method, cpp_code)
     cpp_code <- gsub("_KERNEL_CODE_", event$kernel_code, cpp_code)
@@ -175,6 +187,8 @@ mkcpp_event <- function(event, kernel_type, name_type) {
     return(cpp_code)
 }
 
+#' Function for internal use
+#' @description Build source code for event definition.
 #' @keywords internal
 mkcpp_definition_events <- function(events) {
     Nevents <- length(events)
@@ -189,10 +203,26 @@ mkcpp_definition_events <- function(events) {
         if (j < Nevents)
             code <- paste0(code, ', ')
     }
+    for (j in 1:Nevents){
+        if ("entry" %in% events[[j]]$type) {
+            code <- gsub("_CORRECTION_IF_ENTRY_", "newI.entry = NA_REAL;", code)
+        }
+    }
+    code <- gsub("_CORRECTION_IF_ENTRY_", "", code)
+
+    for (j in 1:Nevents){
+      if ("exit" %in% events[[j]]$type) {
+        code <- gsub("_CORRECTION_IF_EXIT_", "newI.out = false;", code)
+      }
+    }
+    code <- gsub("_CORRECTION_IF_EXIT_", "", code)
+
     code <- paste0(code, ' };')
     return(code)
 }
 
+#' Function for internal use
+#' @description Build source main code for model simulation.
 #' @keywords internal
 mkcpp_popsim <- function(model, with_id) {
     file <- system.file("include", "popsim_template.cpp", package="IBMPopSim")

@@ -118,6 +118,10 @@ Thanks to  model parameters and predefined functions, the C++ code to be written
 ## Installation
 
 
+
+
+
+
 The latest stable version can be installed from CRAN:
 
 ``` r
@@ -166,7 +170,7 @@ num_births <- length(sim_out$population$birth) - init_size
 num_deaths <- sum(!is.na(sim_out$population$death))
 print(c("births" = num_births, "deaths" = num_deaths))
 ## births deaths 
-##    965    988
+##    999    995
 ```
 
 ## Quick model creation and simulation
@@ -179,6 +183,9 @@ In order to define a model, the user must specify three building blocks:
 * The different events that can occur and their intensity (see Section \@ref(events)).
 
 The model can then be created from these three blocks.
+
+
+
 
 
 
@@ -237,20 +244,20 @@ sim_out <- popsim(model, pop, events_bounds, params,
 pop_out <- sim_out$population
 head(pop_out)
 ##       birth death  male
-## 1 -84.96353    NA FALSE
-## 2 -84.95439    NA  TRUE
-## 3 -84.95336    NA FALSE
-## 4 -84.91533    NA  TRUE
-## 5 -84.89949    NA FALSE
-## 6 -84.89676    NA  TRUE
+## 1 -84.97524    NA FALSE
+## 2 -84.96228    NA  TRUE
+## 3 -84.96043    NA FALSE
+## 4 -84.95083    NA FALSE
+## 5 -84.91351    NA  TRUE
+## 6 -84.91099    NA FALSE
 female_pop <- pop_out[pop_out$male==FALSE, ]
 age_pyramid(female_pop, ages = 85:90, time = 30)
 ##       age  male value
-## 1 85 - 86 FALSE   238
-## 2 86 - 87 FALSE   228
-## 3 87 - 88 FALSE   200
-## 4 88 - 89 FALSE   192
-## 5 89 - 90 FALSE   202
+## 1 85 - 86 FALSE   230
+## 2 86 - 87 FALSE   235
+## 3 87 - 88 FALSE   218
+## 4 88 - 89 FALSE   175
+## 5 89 - 90 FALSE   200
 Dxt <- death_table(female_pop, ages = 85:90, period = 20:30)
 Ext <- exposure_table(female_pop, ages = 85:90, period = 20:30)
 ```
@@ -387,15 +394,11 @@ The  argument `kernel_code` is `NULL` by default and doesn't have to be specifie
 
 1. **Death event**
 
-If the user defines a **death event**, the C++ code generated is
-
-`pop.kill(k, t);`
-
-which removes the individual number `k` from the population `pop` if he dies. No  kernel has to be specified by the user.
+If the user defines a **death event**, the death date of the current individual `I`  is set to the current time `t`. No kernel has to be specified by the user.
 
 2. **Exit event**
 
-If an **exit event** is defined, a characteristic `out` is automatically added to individuals in the population. When  an individual `I` exit the population, `I.out` is set `TRUE` and his exit time is recorded as a "death" date.
+If an **exit event** is defined, a characteristic `out` is automatically added to individuals in the population. When  an individual `I` exits the population, `I.out` is set to `TRUE` and his exit time is recorded as a "death" date.
 
 3. **Birth event**
 
@@ -771,10 +774,10 @@ Each line of `sim_out$population` contains the information of an individual who 
 
 ```r
 str(sim_out$population)
-## 'data.frame':	118198 obs. of  3 variables:
-##  $ birth: num  -90 -90 -89.9 -89.8 -89.8 ...
+## 'data.frame':	117963 obs. of  3 variables:
+##  $ birth: num  -90 -89.9 -89.9 -89.9 -89.9 ...
 ##  $ death: num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ male : logi  TRUE FALSE FALSE FALSE FALSE FALSE ...
+##  $ male : logi  TRUE TRUE FALSE FALSE TRUE FALSE ...
 ```
 
 
@@ -795,7 +798,7 @@ For instance, the acceptance rate in the toy model is
 ```r
 sim_out$logs['effective_events']/sim_out$logs['proposed_events']
 ## effective_events 
-##        0.2190619
+##        0.2177633
 ```
 
 and the simulation time  is
@@ -804,7 +807,7 @@ and the simulation time  is
 ```r
 sim_out$logs['duration_main_algorithm']
 ## duration_main_algorithm 
-##                0.050844
+##                95215907
 ```
 
 **Parameters modification and event removal**
@@ -849,6 +852,7 @@ pyr <- age_pyramid(pop_out, ages = 0:a_max, time = 30)
 plot_pyramid(pyr)
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("main_plot_30-1.pdf")
 ```
@@ -876,7 +880,7 @@ sim_out <- popsim(model, pop, events_bounds, params,
 
 ```
 ## duration_main_algorithm 
-##                0.009004
+##                18101526
 ```
 
 By default, the number of threads is the number of concurrent threads supported by the available hardware implementation. The number of thread can be set manually with the optional argument `num_threads` of `?popsim`.
@@ -936,6 +940,7 @@ p_1_t <- lapply(sim_out$population, function(pop_df){
                 })
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("main_prob_subgroup1-1.pdf")
 ```
@@ -975,12 +980,12 @@ sim_out_id <-popsim(model = model_swap_id,
 ```r
 head(sim_out_id$population[[1]])
 ##   id birth death sub_grp
-## 1  1     0    NA       2
+## 1  1     0    NA       1
 ## 2  9     0    NA       2
-## 3 17     0    NA       2
-## 4 25     0    NA       1
-## 5 33     0    NA       1
-## 6 41     0    NA       2
+## 3 17     0    NA       1
+## 4 25     0    NA       2
+## 5 33     0    NA       2
+## 6 41     0    NA       1
 ```
 
 These data frames can be merged into a single data frame summarizing the life course of each individual, by calling the function `merge_pop_withid`.
@@ -988,20 +993,26 @@ These data frames can be merged into a single data frame summarizing the life co
 
 ```r
 pop_list <- sim_out_id$population
-pop_merge <- merge_pop_withid(pop_list)
+pop_merge <- merge_pop_withid(pop_list, chars_tracked='sub_grp')
 head(pop_merge)
-##   id birth death sub_grp_1 sub_grp_2 sub_grp_3 sub_grp_4 sub_grp_5
-## 1  1     0    NA         2         2         2         2         1
-## 2  9     0    NA         2         2         2         1         2
-## 3 17     0    NA         2         2         2         2         2
-## 4 25     0    NA         1         1         1         1         1
-## 5 33     0    NA         1         1         1         1         1
-## 6 41     0    NA         2         2         2         2         2
+##      id birth death sub_grp_1 sub_grp_2 sub_grp_3 sub_grp_4 sub_grp_5
+## 1     1     0    NA         1         1         1         1         1
+## 2 32769     0    NA         2         1         2         2         2
+## 3 65537     0    NA         1         1         1         2         2
+## 4 98305     0    NA         2         1         1         2         1
+## 5 31074     0    NA         2         2         2         1         1
+## 6 63842     0    NA         1         1         1         1         1
 ```
 
 Each line of `pop_merge` corresponds to the life course of one individual. However, the population is only represented at time $t=0,1..,5$, and this data frame doesn't account for exact swap event times or multiple swap events that occurred between between two time steps.
 
 # C\+\+ essentials {#cppessentials}
+
+
+
+
+
+
 
 
 
@@ -1220,6 +1231,7 @@ dr <- with(EW_pop_14$rates,
 plot(dr, xlab="age", ylab="dr", main="Example of step function")
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("plot_stepfun-1.pdf")
 ```
@@ -1231,6 +1243,7 @@ f <- piecewise_x(80, list(dr, gompertz(0.00006, 0.085)))
 x <- seq(40, 110)
 plot(x, sapply(x, f), xlab="age", ylab="f", main="Example of piecewise function")
 ```
+
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("plot_piecewise-1.pdf")

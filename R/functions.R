@@ -1,3 +1,8 @@
+#' Autogenerate cpp details documentation
+#'
+#' @description Autogenerating documentation details for cpp functions
+#'
+#' @keywords internal
 details_cpp <- function() {
    "@details A C++ version of this function is available. See \\code{vignette('IBMPopSim_cpp')} for more details."
 }

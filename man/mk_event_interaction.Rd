@@ -53,7 +53,7 @@ See \code{vignette('IBMPopSim')} for more details.
 \examples{
 
 death_interaction_code<- " result = max(J.size -I.size,0);"
-event <- mk_event_interaction(type="death", 
+event <- mk_event_interaction(type="death",
                              interaction_code = death_interaction_code)
 
 }

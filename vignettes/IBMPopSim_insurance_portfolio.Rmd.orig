@@ -177,7 +177,8 @@ entry_event <- mk_event_poisson(
                    else
                         newI.risk_cls= 2;
                    double a = CUnif(65,70);
-                   newI.set_age(a,t);"
+                   newI.set_age(a,t);
+                   newI.out = false;"
 )
 ```
 
@@ -280,7 +281,7 @@ LC <- lc()
 LCfitSim1 <- fit(LC, Dxt = Dx , Ext = Ex,ages=age_grp[-length(age_grp)])
 ```
 
-```{r, insur_LeeCarter_risk1}
+```{r, echo=FALSE, insur_LeeCarter_risk1}
 time <- 30
 plot(age_grp[-length(age_grp)],
      LCfitSim1$ax + LCfitSim1$bx*LCfitSim1$kt[t],
@@ -306,7 +307,7 @@ Ex_pop <- exposure_table(sim_out$population, ages = age_grp, period = 0:30)
 mx_pop <- Dx_pop/Ex_pop
 ```
 
-```{r, insur_mortality_rates}
+```{r, echo=FALSE, insur_mortality_rates}
 time <- 30
 plot(age_grp[-length(age_grp)], log((Dx_pop/Ex_pop)[,time]),
      main = "Portfolio log mortality rates at t=30",
@@ -332,7 +333,7 @@ matplot(age_grp[-length(age_grp)],log(mx_pop),
 
 **Cohort mortality rates**
 
-```{r, insur_cohort}
+```{r, echo=FALSE, insur_cohort}
 plot(65:94,log(extractCohort(mx_pop, age= 65, period =0)), type="l")
 lines(65:89,log(extractCohort(mx_pop, age= 65, period =5)), col = "#00AFBB")
 lines(65:84,log(extractCohort(mx_pop, age= 65, period =10)), col="#FC4E07")

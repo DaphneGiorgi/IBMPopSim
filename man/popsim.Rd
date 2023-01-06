@@ -61,11 +61,11 @@ death = mk_event_poisson(type = 'death', intensity = 'mu')
 params = list('lambda' = 100, 'mu' = 100)
 birth_death <- mk_model(events = list(birth, death),
                        parameters = params)
-                       
-sim_out <- popsim(model = birth_death, 
-                 population = pop, 
+
+sim_out <- popsim(model = birth_death,
+                 population = pop,
                  events_bounds = c('birth' = params$lambda, 'death' = params$mu),
-                 parameters = params, 
+                 parameters = params,
                  time = 10)
                        }
 }

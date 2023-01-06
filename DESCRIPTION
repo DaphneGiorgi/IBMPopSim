@@ -1,8 +1,8 @@
 Package: IBMPopSim
 Type: Package
 Title: Individual Based Model Population Simulation
-Version: 0.3.1
-Date: 2020-11-09
+Version: 0.4.3
+Date: 2023-05-01
 Authors@R: c(
     person('Daphné', 'Giorgi', role = c('aut', 'cre'), 
       email = 'daphne.giorgi@sorbonne-universite.fr'),
@@ -19,18 +19,19 @@ URL: https://github.com/DaphneGiorgi/IBMPopSim,
 BugReports: https://github.com/DaphneGiorgi/IBMPopSim/issues
 License: MIT + file LICENSE
 Depends: R (>= 3.5.0)
-Imports: Rcpp (>= 0.12), checkmate, stats, utils, readr, rlang, tidyr,
-        dplyr (>= 0.8.0), reshape, purrr, ggplot2
+Imports: Rcpp (>= 0.12), checkmate, stats, readr, rlang, dplyr (>=
+        0.8.0), ggplot2
 Suggests: RcppArmadillo, knitr, rmarkdown, bookdown, ggfortify, magick,
         colorspace, gridExtra
+LinkingTo: Rcpp
 LazyData: true
 SystemRequirements: C++11
-NeedsCompilation: no
+NeedsCompilation: yes
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 Encoding: UTF-8
-Packaged: 2020-11-10 13:50:42 UTC; giorgi
+Packaged: 2023-01-06 09:43:54 UTC; giorgi
 Author: Daphné Giorgi [aut, cre],
   Sarah Kaakai [aut],
   Vincent Lemaire [aut]

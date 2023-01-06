@@ -163,6 +163,8 @@ summary.model <- function(object, ...) {
         )
 }
 
+#' Function for internal use
+#' @description Get R and C++ type of characteristics.
 #' @keywords internal
 mk_individual_type <- function(characteristics) {
     typR <- sapply(characteristics, function(t) {
@@ -179,6 +181,8 @@ mk_individual_type <- function(characteristics) {
     return(individual_type)
 }
 
+#' Function for internal use
+#' @description Get R type of a parameter.
 #' @keywords internal
 get_Rtype <- function(x) {
     try(
@@ -197,6 +201,8 @@ get_Rtype <- function(x) {
     )
 }
 
+#' Function for internal use
+#' @description Get C++ type of a parameter.
 #' @keywords internal
 get_Ctype <- function(x) {
     typR <- get_Rtype(x)
@@ -250,6 +256,14 @@ mk_parameters_types <- function(parameters) {
          "lengths" = sapply(parameters, length))
 }
 
+#' Search for a given string in event types
+#'
+#' @param events list of events
+#' @param str string to search
+#'
+#' @return boolean
+#'
+#' @keywords internal
 has_event_type <- function(events, str) {
     b = FALSE
     for (ev in events) {

@@ -28,7 +28,7 @@ population (interactions).
 
 IBMPopSim overcomes the limitations of time consuming IBMs simulations.
 This is done by implementing new efficient algorithms based on thinning
-methods, which are compiled using the [Rcpp](http://www.rcpp.org)
+methods, which are compiled using the [Rcpp](https://www.rcpp.org/)
 library. The package allows a wide range of IMBs to be simulated, while
 being user-friendly thanks to its structure based on simple build
 blocks. In addition, we provide tools for analyzing outputs, such a

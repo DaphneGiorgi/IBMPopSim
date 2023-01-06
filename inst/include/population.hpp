@@ -118,6 +118,7 @@ void population::cleanAll(double t){
 	individuals = new_individuals;
 }
 
+// Split and merge functions for parallel execution
 // split a std::vector<T>
 template <typename T>
 std::vector<std::vector<T>> split_vector(std::vector<T> const & v, unsigned n) {

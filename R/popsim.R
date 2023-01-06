@@ -33,11 +33,11 @@
 
 #'birth_death <- mk_model(events = list(birth, death),
 #'                        parameters = params)
-#'                        
-#'sim_out <- popsim(model = birth_death, 
-#'                  population = pop, 
+#'
+#'sim_out <- popsim(model = birth_death,
+#'                  population = pop,
 #'                  events_bounds = c('birth' = params$lambda, 'death' = params$mu),
-#'                  parameters = params, 
+#'                  parameters = params,
 #'                  time = 10)
 #'                        }
 #' @export
@@ -159,6 +159,15 @@ popsim <- function(model, population, events_bounds, parameters=NULL,
     }
 }
 
+
+#' Complete a population id
+#'
+#' @description In a population with an \code{id} column, verifies that there are no NA \code{id} values,
+#' and if there are, completes the missing \code{id}s
+#'
+#' @param population population dataframe
+#'
+#' @keywords internal
 id_complete <- function(population) {
     if (!is.null(population$id)) {
         xx = is.na(population$id)

@@ -219,7 +219,7 @@ sim_out <- popsim(model = model,
 ```r
 sim_out$logs["duration_main_algorithm"]
 ## duration_main_algorithm 
-##                0.131719
+##               169840837
 ```
 
 # Outputs
@@ -228,10 +228,10 @@ sim_out$logs["duration_main_algorithm"]
 
 ```r
 str(sim_out$population)
-## 'data.frame':	293742 obs. of  3 variables:
+## 'data.frame':	313989 obs. of  3 variables:
 ##  $ birth     : num  498 498 498 498 498 ...
 ##  $ death     : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ birth_size: num  2.95 2.47 2.76 2.43 2.47 ...
+##  $ birth_size: num  2.7 2.78 2.66 2.61 2.53 ...
 pop_out <- sim_out$population
 ```
 
@@ -241,20 +241,12 @@ Population size at $t=500$.
 ```r
 pop_size <- nrow(population_alive(pop_out,t = 500))
 pop_size
-## [1] 338
+## [1] 303
 ```
 
 Result from [@MR2562651] can be reproduce from the simulation.
 For each individual in the population, we draw below a line representing its birth size during its life time.
 
-
-```r
-ggplot(pop_out) + geom_segment(
-                    aes(x=birth, xend=death, y=birth_size, yend=birth_size),
-                    na.rm=TRUE, colour="blue", alpha=0.1) +
-                xlab("Time") +
-                ylab("Birth size")
-```
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("inter_output2-1.png")
@@ -302,10 +294,10 @@ ggplot(pop_out) +
   xlab("Time") + ylab("Birth size")
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("inter_output3-1.png")
 ```
-
 
 **Evolution of age pyramid by birth size**
 
@@ -315,13 +307,13 @@ knitr::include_graphics("inter_output3-1.png")
 ```r
 pyr <- age_pyramid(pop_out, ages = seq(0,2,by=0.2), time = 500)
 head(pyr)
-##       age birth_size value
-## 1 0 - 0.2   1.735217     2
-## 2 0 - 0.2   1.756296     0
-## 3 0 - 0.2   1.844502     0
-## 4 0 - 0.2   1.857982     1
-## 5 0 - 0.2   1.858391     0
-## 6 0 - 0.2   1.859076     0
+##         age birth_size value
+## 1   0 - 0.2   2.447711     2
+## 2 0.2 - 0.4   2.447711     0
+## 3 0.4 - 0.6   2.447711     1
+## 4 0.6 - 0.8   2.447711     0
+## 5   0.8 - 1   2.447711     0
+## 6   1 - 1.2   2.447711     0
 ```
 
 The age pyramid can be plotted, with a visualization of the individuals birth size, starting by defining discrete birth sizes subgroups, and by assigning a color to each subgroup.
@@ -330,13 +322,13 @@ The age pyramid can be plotted, with a visualization of the individuals birth si
 ```r
 pyr$group_name <- as.character(cut(pyr$birth_size+1e-6, breaks = seq(0,4,by=0.25)))
 head(pyr)
-##       age birth_size value group_name
-## 1 0 - 0.2   1.735217     2 (1.5,1.75]
-## 2 0 - 0.2   1.756296     0   (1.75,2]
-## 3 0 - 0.2   1.844502     0   (1.75,2]
-## 4 0 - 0.2   1.857982     1   (1.75,2]
-## 5 0 - 0.2   1.858391     0   (1.75,2]
-## 6 0 - 0.2   1.859076     0   (1.75,2]
+##         age birth_size value group_name
+## 1   0 - 0.2   2.447711     2 (2.25,2.5]
+## 2 0.2 - 0.4   2.447711     0 (2.25,2.5]
+## 3 0.4 - 0.6   2.447711     1 (2.25,2.5]
+## 4 0.6 - 0.8   2.447711     0 (2.25,2.5]
+## 5   0.8 - 1   2.447711     0 (2.25,2.5]
+## 6   1 - 1.2   2.447711     0 (2.25,2.5]
 ```
 
 
@@ -354,6 +346,7 @@ names(colors) <- lbls
 ```r
 plot_pyramid(pyr, group_colors = colors, group_legend = 'Birth size')
 ```
+
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("inter_pyramid-1.png")
@@ -431,7 +424,7 @@ sim_out <- popsim(
 ```r
 pop_size <- nrow(population_alive(sim_out$population, t = 500))
 pop_size
-## [1] 543
+## [1] 555
 ```
 
 
@@ -442,6 +435,7 @@ ggplot(sim_out$population) +
   xlab("Time") +
   ylab("Birth size")
 ```
+
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("inter_output-1.png")
@@ -481,7 +475,7 @@ sim_out_full <- popsim(model = model_full,
 ```r
 sim_out_full$logs["duration_main_algorithm"]/sim_out$logs["duration_main_algorithm"]
 ## duration_main_algorithm 
-##                39.58549
+##                200.0239
 ```
 
 # References

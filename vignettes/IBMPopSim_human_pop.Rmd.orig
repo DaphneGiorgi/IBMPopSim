@@ -67,7 +67,7 @@ params <- with(EW_pop_14$rates,
       )
 ```
 
-```{r, hp_intensities}
+```{r, echo=FALSE, hp_intensities}
 lbl = labs(x="Age", y="Intensity")
 thm = theme(plot.title = element_text(hjust = 0.5))
 grid.arrange(
@@ -233,7 +233,7 @@ old_death_female <- linfun(x = c(89,120), y = c(death_female_90(89), 0.7))
 params$death_female <- piecewise_x(c(89), list(death_female_90,old_death_female))
 ```
 
-```{r, hp_log_death}
+```{r, echo=FALSE, hp_log_death}
 plot(0:120, log(params$death_female(0:120)),type="l",main="log female death rates",ylab = "rates")
 ```
 
@@ -338,7 +338,7 @@ dim(pop_female_time)[1]# Number of females over 50
 
 ```{r,hp_birth_distrib, echo=FALSE}
 ggplot(pop_female_time, aes(x=as.factor(children)))+
-geom_bar(aes(y = (..count..)/sum(..count..)))+
+geom_bar(aes(y = after_stat(count/sum(count))))+
 scale_y_continuous(labels=scales::percent) +
 labs(title="Distribution of the number of children for women aged over 50 at time 100",
      x="Number of children",
@@ -431,7 +431,7 @@ mx_1 <- Dx_1/Ex
 mx_2 <- Dx_2/Ex
 ```
 
-```{r, hp_death_rate_1,echo=FALSE}
+```{r, warning=FALSE, hp_death_rate_1,echo=FALSE}
 plot(70:89,mx_1, col="red",type="b",main="Crude central death rate and true death intensity from cause 1")
 lines(70:89,params$CoD1_prop*params$death_male(70:89),col = "blue")
 ```

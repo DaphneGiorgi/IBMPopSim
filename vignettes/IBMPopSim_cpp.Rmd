@@ -21,6 +21,12 @@ vignette: >
 
 
 
+
+
+
+
+
+
 The arguments `intensity_code`, `interaction_code` and `kernel_code` of the events functions must contain some C++ code given by the user. You don't need to be a C++ guru to write the few instructions needed. These functions should use very little C++ syntax. They are essentially arithmetic or logical operations, tests and calls to predefined functions, which we give an overview below.
 
 For code efficiency, you should not allocate memory in these functions (no `new`) or use type containers (`std::vector`, `std::list`, ...). If you think you need to allocate memory, consider as parameter an R vector that will be mapped via `arma::vector` (see below), or declare the variable as `static`.
@@ -236,6 +242,7 @@ dr <- with(EW_pop_14$rates,
 plot(dr, xlab="age", ylab="dr", main="Example of step function")
 ```
 
+
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("plot_stepfun-1.pdf")
 ```
@@ -247,6 +254,7 @@ f <- piecewise_x(80, list(dr, gompertz(0.00006, 0.085)))
 x <- seq(40, 110)
 plot(x, sapply(x, f), xlab="age", ylab="f", main="Example of piecewise function")
 ```
+
 
 ```{r, echo=FALSE, fig.align='center'}
 knitr::include_graphics("plot_piecewise-1.pdf")

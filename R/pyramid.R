@@ -1,5 +1,3 @@
-
-
 #' Age pyramid from a population data frame at a given time.
 #'
 #' @description Reduce a population data frame containing all individuals (with some characteristics) to an age-groups data frame (preserving characteristics). The function computes the number of individuals at \code{time} in each age group \code{[ages[i],ages[i+1][}, for \code{i} in \code{\{1,...,N-1\}}.
@@ -21,27 +19,35 @@
 #'
 age_pyramid <- function(population, time = 0, ages = c(0:110, Inf))
 {
-    assertPopulation(population)
-    assertNumber(time, lower = 0, finite = TRUE)
-    assertNumeric(ages, lower = 0, min.len = 2, unique = TRUE, sorted = TRUE)
+  assertPopulation(population)
+  assertNumber(time, lower = 0, finite = TRUE)
+  assertNumeric(ages, lower = 0, min.len = 2, unique = TRUE, sorted = TRUE)
 
-    N <- length(ages)
-    fact_ages <- factor(ages[1:(N-1)])
-    levels(fact_ages) <- paste(ages[1:(N-1)], '-', ages[2:N])
-    others <- setdiff(colnames(population), c('id', 'birth', 'death','out','entry'))
-    # Select individuals present in the population at time t
-    df_alive <- population_alive(population,t = time,ages[1],ages[N])
-    # Compute their age at time t and select their characteristics
-    df_temp <- df_alive %>%
-        mutate(age = fact_ages[findInterval(time - .data$birth, ages[1:(N-1)])]) %>%
-        select_at(c('age', others))
-    # Frequency table (group_by_at to use string vector for column names)
-    df_pyr <- data.frame(df_temp %>% group_by_at(c('age', others)) %>%
-                summarise(value=n())) %>%
-                complete('age'=fact_ages[1:(N-1)],
-                         !!!as.list(sapply(others, as.name)),
-                         fill=list(value=0))
-    return(data.frame(df_pyr))
+  N <- length(ages)
+  fact_ages <- factor(ages[1:(N-1)])
+  levels(fact_ages) <- paste(ages[1:(N-1)], '-', ages[2:N])
+  others <- setdiff(colnames(population), c('id', 'birth', 'death','out','entry'))
+  # Select individuals present in the population at time t
+  df_alive <- population_alive(population,t = time,ages[1],ages[N])
+
+  # Compute their age at time t and select their characteristics
+  df_temp <- df_alive %>%
+    mutate(age = fact_ages[findInterval(time - .data$birth, ages[1:(N-1)])]) %>%
+    select_at(c('age', others))
+
+  d <- data.frame(df_temp %>% group_by_at(c('age', others)) %>%
+                    summarise(value=n()))
+
+  # rm age column and value column for expand.grid
+  d_base <- d[-c(1,length(d))]
+
+  out <- expand.grid(c(list('age'=levels(fact_ages)),lapply(as.list(d_base), unique)))
+  names <- names(out)
+
+  out <- dplyr::full_join(out,d, by = names)
+  out["value"][is.na(out["value"])] <- 0
+
+  return(data.frame(out))
 }
 
 #' Age pyramid from a population data frame at some given times.

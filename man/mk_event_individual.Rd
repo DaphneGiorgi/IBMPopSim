@@ -53,7 +53,7 @@ birth_event <- mk_event_individual(type = "birth",
                 intensity_code = "if (I.male) result = 0;
                                   else result = birth_rate(age(I,t));",
                 kernel_code = "newI.male = CUnif(0, 1) < p_male;")
-         
+
 }
 \seealso{
 \code{\link{mk_model}}, \code{\link{mk_event_poisson}}, \code{\link{mk_event_inhomogeneous_poisson}}, and \code{\link{mk_event_interaction}}.

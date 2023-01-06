@@ -94,7 +94,7 @@ Death intensities are based on EW 2014 age specific death rates by gender and IM
 
 Death rates are lower in less deprived quintiles.
 
-```{r, hpIMD_death_rate}
+```{r, echo=FALSE, hpIMD_death_rate}
 ggplot(EW_popIMD_14$death_rates$male, aes(x=age,y=log(value),color=factor(IMD)))+
 geom_step()+scale_color_discrete(name="IMD quintile")+ylab("Males log death rates")
 ```
@@ -174,7 +174,7 @@ params_birth <- with(toy_params$birth,
 )
 ```
 
-```{r, hpIMD_birth_intensities}
+```{r, echo=FALSE, hpIMD_birth_intensities}
 plot(x=0:50,
 	y=params_birth$TFR_weight[[1]]*params_birth$birth[[1]](0:50-params_birth$a_mean),
 	type="l", xlab="age", ylab="birth intensity", col="green", ylim=c(0,0.16),
@@ -248,13 +248,18 @@ params_swap <- with(toy_params$swap,
 ```
 
 ```{r}
- df_intensities <- melt(data.frame("age"=c(0,15,30,45),toy_params$swap$intensities),
-			id.vars="age")
+ df_intensities <- data.frame("age"=c(0,15,30,45),toy_params$swap$intensities)
 ```
 
-```{r, hpIMD_df}
-ggplot(df_intensities, aes(x=age,y=value,color=variable))+geom_step()+
-scale_color_discrete(name="Origin IMD quintile")+ylab("swap intensity")
+```{r, echo=FALSE, hpIMD_df}
+ggplot()+
+geom_step(data=df_intensities, mapping=aes(x=age, y=IMD1, color = "IMD1"))+
+geom_step(data=df_intensities, mapping=aes(x=age, y=IMD2, color = "IMD2"))+
+geom_step(data=df_intensities, mapping=aes(x=age, y=IMD3, color = "IMD3"))+
+geom_step(data=df_intensities, mapping=aes(x=age, y=IMD4, color = "IMD4"))+
+geom_step(data=df_intensities, mapping=aes(x=age, y=IMD5, color = "IMD5"))+
+scale_color_discrete(name="Origin IMD quintile")+
+ylab("swap intensity")
 ```
 
 C++ code of the intensity of a swap event, using the model parameters:
@@ -427,7 +432,7 @@ compo_pop_fem <- age_pyr_fem %>%
 		mutate(composition = value/sum(value))
 ```
 
-```{r, hpIMD_compo_fem}
+```{r, echo=FALSE, hpIMD_compo_fem}
 ggplot(compo_pop_fem, aes(x=as.integer(time),y=composition,colour=as.factor(IMD)))+
 geom_line()+
 facet_wrap("Age group"~age)+
@@ -464,7 +469,7 @@ compo_pop_fem_nosw <- filter(bind_rows(age_pyrs_nosw,.id="time"), male==FALSE) %
 				group_by(age,time) %>% mutate(perc=value/sum(value))
 ```
 
-```{r, hpIMD_compo_fem2}
+```{r, echo=FALSE, hpIMD_compo_fem2}
 #  Without swap events
 ggplot(compo_pop_fem_nosw, aes(x=as.integer(time),y=perc,colour=as.factor(IMD)))+
 geom_line()+
@@ -511,10 +516,10 @@ sim_out_id <- popsim(model_id,
 
 When each individual has been attributed a unique id, a data frame summarizing each life course can be obtained from the simulation output `sim_out_id$population`(list of data frames) by calling the function `merge_pop_withid`.
 
-Characteristics such as gender which don't change over time can be specified in the argument `char_ignored`.
+Characteristics to be tracked over time must be specified in the argument `chars_tracked`.
 
 ```{r}
-pop_id <- merge_pop_withid(sim_out_id$population,char_ignored = c("male"))
+pop_id <- merge_pop_withid(sim_out_id$population, chars_tracked = "IMD")
 ```
 
 `pop_id` is data frame in which each line corresponds to an individual and include his id, birth date, death date, gender and IMD subgroup at each discretization time (components of $t_{sim}$).
