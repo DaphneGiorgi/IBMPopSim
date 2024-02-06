@@ -6,7 +6,7 @@
 \usage{
 popsim(
   model,
-  population,
+  initial_population,
   events_bounds,
   parameters = NULL,
   age_max = Inf,
@@ -15,13 +15,14 @@ popsim(
   num_threads = NULL,
   clean_step = NULL,
   clean_ratio = 0.1,
-  seed = NULL
+  seed = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
 \item{model}{Model resulting from a call to the function \code{\link{mk_model}}.}
 
-\item{population}{Data frame representing the initial population.}
+\item{initial_population}{Object of \link{population} class representing the initial population.}
 
 \item{events_bounds}{Named vector of events bounds, with names corresponding to events names.}
 
@@ -29,7 +30,7 @@ popsim(
 
 \item{age_max}{Maximum age of individuals in the population (\code{Inf} by default).}
 
-\item{time}{Final time (Numeric). If \code{time} is a vector or vector of simulation discretized times.}
+\item{time}{Final time (Numeric). Can be of length 1 or a vector of simulation discretized times.}
 
 \item{multithreading}{Logical for multithread activation, \code{FALSE} by default. Should be only activated for IBM simulation with no interactions.}
 
@@ -40,12 +41,14 @@ popsim(
 \item{clean_ratio}{\emph{(Optional)} Optional parameter for improving simulation time. 0.1 by default.}
 
 \item{seed}{\emph{(Optional)} Random generator seed, random by default.}
+
+\item{verbose}{\emph{(Optional)} Activate verbose output, FALSE by default.}
 }
 \value{
-popsim returns a list of composed of \describe{
+List composed of \describe{
 \item{arguments}{Simulation inputs (initial population, parameters value, multithreading...)}
 \item{logs}{Simulation logs (algorithm duration, accepted/rejected events...).}
-\item{population}{If \code{time} is of length 1, population is a data frame composed of all individuals who lived in the population of \code{[0,time]}. If \code{time} is a vector, \code{population} is a list of population data frames.}
+\item{population}{If \code{time} is of length 1, population is an object of type \link{population} containing of all individuals who lived in the population in the time interval \code{[0,time]}. If \code{time} is a vector (\code{time[1], ..., time[n]}), \code{population} is a list of \code{n} objects of type \link{population}, each representing the state of the population at time \code{time[i]}, for \code{i = 1,\ldots, n}.}
 }
 }
 \description{
@@ -54,7 +57,8 @@ This function simulates the random evolution of an IBM.
 \examples{
 \donttest{
 init_size <- 100000
-pop <- data.frame(birth = rep(0, init_size), death = NA)
+pop_df <- data.frame(birth = rep(0, init_size), death = NA)
+pop <- population(pop_df)
 
 birth = mk_event_poisson(type = 'birth', intensity = 'lambda')
 death = mk_event_poisson(type = 'death', intensity = 'mu')
@@ -63,7 +67,7 @@ birth_death <- mk_model(events = list(birth, death),
                        parameters = params)
 
 sim_out <- popsim(model = birth_death,
-                 population = pop,
+                 initial_population = pop,
                  events_bounds = c('birth' = params$lambda, 'death' = params$mu),
                  parameters = params,
                  time = 10)

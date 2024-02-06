@@ -2,7 +2,7 @@
 % Please edit documentation in R/events.R
 \name{mk_event_individual}
 \alias{mk_event_individual}
-\title{Creates an event with intensity of class individual.}
+\title{Creating an event with intensity of class individual}
 \usage{
 mk_event_individual(type, name, intensity_code, kernel_code = "")
 }

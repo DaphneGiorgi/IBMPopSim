@@ -19,32 +19,35 @@ vignette: >
 
 
 
-This vignette provides an example  of usage of the package IBMPopSim, for simulating an heterogeneous life insurance portfolio.
+This vignette provides an example  of usage of the package `IBMPopSim`, for simulating an heterogeneous life insurance portfolio.
 
 See `vignette('IBMPopSim')` for a detailed presentation of the package.
 
 # Example description
 
-We consider a insurance portfolio composed of males policyholders, characterized by their age and risk class (for instance smokers vs non smokers).
+We consider an insurance portfolio composed of males policyholders, characterized by their age and risk class (for instance smokers vs non smokers).
 
 Entries to the portfolio are modeled by Poissonian events, and individuals can die or exit the portfolio with an intensity depending on their age and risk class.
 
 
 # Population creation
 
-
 We start with an initial population of 10 000 males of age 65, distributed uniformly in each risk class.
 
 The population data frame has thus the two (mandatory) columns:
+
 - `birth` : Date of birth of the policyholders (here the initial time is $t_0=0$).
 - `death`: Date of death (`NA` if alive).
 
 and the column `risk_cls` corresponding to the policyholders risk class.
 
+Since individuals are free to get or interrupt a life insurance at any time, in this type of population there are entry and exit events, hence we create the population with the flags 'entry and 'out' set to `TRUE`. This will create 2 additional columns in the population for recording entry and exit events. At creation, `entry` values are set to `NA` and `out` values are set to `FALSE`.
+
 
 ```r
 N <- 30000
 pop_df <- data.frame("birth"=rep(-65,N),"death"=rep(NA,N),"risk_cls"= rep(1:2,each= N/2))
+pop_init <- population(pop_df, entry=TRUE, out=TRUE)
 ```
 
 # Model parameters
@@ -85,10 +88,13 @@ LCforecastMale <- forecast(LCfitMale, h = t)
 plot(LCforecastMale)
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_forecast-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_forecast-1.png")
 ```
+
+</div>
 
 Age and time dependent function can be created with the package function `?piecewise_xy`, with allows to define age-specific mortality rates, piecewise constant in time, such as $d^i$ in \@ref(eq:deathrates).
 
@@ -112,7 +118,6 @@ params <- list("death_male" = death_male, "alpha" = c(1.3,0.8))
 
 ## Exit events
 
-
 Individuals exit the portfolio at a rate $\mu^{i}$, $i=1,2$ depending on their risk class.
 
 
@@ -122,9 +127,7 @@ params$mu <- c(0.001,0.06) # Exit event rate
 
 ## Entry  events
 
-
 Entry events occur at a Poissonian (constant) rate $\lambda$ (in average $\lambda$ individuals enter the population each year).
-
 
 
 ```r
@@ -132,7 +135,6 @@ params$lambda <- 30000 # Entry events
 ```
 
 # Events creation
-
 
 ## Death events creation
 
@@ -148,9 +150,9 @@ death_event <- mk_event_individual(
 
 ## Exit events creation
 
-Each individual in the portfolio can  exit the portfolio at a constant (individual) rate $\mu^i$ depending on their risk class.
+Each individual in the portfolio can exit the portfolio at a constant (individual) rate $\mu^i$ depending on their risk class.
 
-In the presence of events of type `exit` in the population, a characteristic named `out` is automatically added to the individuals characteristics, set to `FALSE` by default.
+In the presence of events of type `exit`, the population must have a characteristic named `out`, which is set to `FALSE` by default (see function '?population').
 When an individual leaves the population, his characteristic `out` is set to `TRUE` and the date at which he exited the population is recorded in the column `death`.
 
 
@@ -166,8 +168,8 @@ exit_event <- mk_event_individual(
 
 New policyholders enter the population at a constant rate $\lambda$ (on average, $\lambda$ individuals enter the portfolio each year). A new individual entering the population at age $a$ given by a uniform variable on $[65,70]$, and  is in risk class 1 with probability $p$.
 
-In the presence of events of type `entry` in the population, a characteristic named `entry` is automatically added to the individuals characteristics, set to `NA` by default.
-When an individual leaves the population, his characteristic `entry` is set to the date $t$ at which he enters the population.
+In the presence of events of type `entry`, the population must have a characteristic named `entry`, initially set to `NA` by default (see function '?population').
+When an individual enters the population, his characteristic `entry` is set to the date $t$ at which he enters the population.
 
 
 ```r
@@ -198,22 +200,42 @@ Note that entries can also occur at a rate $\lambda(t)$ depending on time. For m
 
 ```r
 model <- mk_model(
-    characteristics = get_characteristics(pop_df),# Characteristics names ant type
+    characteristics = get_characteristics(pop_init), # Characteristics names and types
     events = list(death_event,entry_event, exit_event), # Events list
     parameters = params # Model parameters
 )
-## [1] "entry event: add 'entry' as individual attributes"
-## [1] "exit event: add 'out' as individual attributes"
 summary(model)
-## Events:
-## #1: individual event of type death
-## #2: poisson event of type entry
-## #3: individual event of type exit
+## Events description:
+## [[1]]	
+## Event class : individual 
+## Event type : death 
+## Event name : death
+## Intensity code : 'result = alpha[I.risk_cls-1] * death_male(t,age(I, t));' 
+## Kernel code : '' 
+## [[2]]	
+## Event class : poisson 
+## Event type : entry 
+## Event name : entry
+## Intensity code : 'lambda' 
+## Kernel code : 'if (CUnif()<p)
+##                         newI.risk_cls =1;
+##                    else
+##                         newI.risk_cls= 2;
+##                    double a = CUnif(65,70);
+##                    newI.set_age(a,t);
+##                    newI.out = false;' 
+## [[3]]	
+## Event class : individual 
+## Event type : exit 
+## Event name : exit
+## Intensity code : 'result = mu[I.risk_cls-1]; ' 
+## Kernel code : '' 
+## 
 ## --------------------------------------- 
 ## Individual description:
 ## names:  birth death risk_cls entry out 
 ## R types:  double double integer double logical 
-## C types:  double double int double bool
+## C types:  double double int double bool 
 ## --------------------------------------- 
 ## R parameters available in C++ code:
 ## names:  death_male alpha mu lambda p 
@@ -238,17 +260,12 @@ death_max <- max(sapply(d_k, function(x) { max(x) }))
 
 ```r
 sim_out <- popsim(model = model,
-    population =pop_df,
+    initial_population = pop_init,
     events_bounds = c('death' = death_max, "entry"=params$lambda, "exit"=max(params$mu)),
     parameters = params,
     time = t,
     age_max = 110,
     multithreading = TRUE)
-## Warning in popsim(model = model, population = pop_df, events_bounds = c(death = death_max, : Add 'entry' attributes
-## to the population.
-## Warning in popsim(model = model, population = pop_df, events_bounds = c(death = death_max, : Add 'out' attributes
-## to the population.
-## Simulation on  [0, 30]
 ```
 
 **Ratio of accepted events**
@@ -256,18 +273,18 @@ sim_out <- popsim(model = model,
 
 ```r
 sim_out$logs[["effective_events"]] / sim_out$logs[["proposed_events"]]
-## [1] 0.2510979
+## [1] 0.2509107
 ```
 
 # Outputs
 
-Data frame `sim_out$population` is composed of all individuals present in the portfolio over the period $[0, t]$ (individuals in the initial population and who entered the portfolio). Each line corresponds to an individual, with his date of birth, date of death (`NA` if still alive at the end of the simulation), risk class, and the characteristic `out`.
+The output population `sim_out$population` is composed of all individuals present in the portfolio over the period $[0, t]$ (individuals in the initial population and those who entered the portfolio). Each line corresponds to an individual, with his date of birth, date of death (`NA` if still alive at the end of the simulation), risk class, and the characteristic `out`.
 The characteristics `out` is set to `TRUE` for individuals who left the portfolio due to an exit event.
 
 
 ```r
 str(sim_out$population)
-## 'data.frame':	930085 obs. of  5 variables:
+## Classes 'population' and 'data.frame':	929363 obs. of  5 variables:
 ##  $ birth   : num  -65 -65 -65 -65 -65 -65 -65 -65 -65 -65 ...
 ##  $ death   : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ risk_cls: int  1 1 1 1 1 1 1 1 1 1 ...
@@ -275,7 +292,7 @@ str(sim_out$population)
 ##  $ out     : logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
 ```
 
-The function `?age_pyramid`computes the age pyramid of a population data frame at a given time.
+The function `?age_pyramid` computes the age pyramid of a population at a given time.
 
 
 ## Age pyramids
@@ -284,38 +301,44 @@ The function `?age_pyramid`computes the age pyramid of a population data frame a
 ```r
 age_grp <- 65:98
 pyr = age_pyramid(sim_out$population, time = 30, ages=age_grp)
-plot_pyramid(pyr, age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
+plot(pyr, age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_pyramid-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_pyramid-1.png")
 ```
 
-In order to visualize both risk classes on the same age pyramid with `?plot_pyramid` a column `group_name` containing the individuals risk classes must be added to the age pyramid, and the colors representing each subgroup have to be specified.
+</div>
+
+In order to visualize both risk classes on the same age pyramid with `?plot.pyramid` a column `group_name` containing the individuals risk classes must be added to the age pyramid, and the colors representing each subgroup have to be specified.
 
 
 ```r
 colnames(pyr)[2]<- "group_name"
 pyr$group_name <- as.character(pyr$group_name)
 colors <- c("1"="#00AFBB","2"="#FC4E07")
-plot_pyramid(pyr,colors,age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
+plot(pyr,colors,age_breaks = as.integer(seq(1,length(age_grp)-1,by=2)))
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_pyr_group-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_pyr_group-1.png")
 ```
+
+</div>
 
 ## Life tables
 
 Death and exposure tables can be computed from the simulation, taking into account the censoring due to exit events.
-Note that when individuals enter the population at different ages, the package functions `?death_table` and `?exposure_table`do not take into account this right censoring.
+Note that when individuals enter the population at different ages, the functions `?death_table` and `?exposure_table` do not take into account this right censoring.
 
 
 ###  Risk class 1
 
-Death and exposure data can be computed from the simulated portfolio. Below is an example with individuals in risk class 1. A Lee-Carter model is reestimated from the simulated data, and compare with the initial forecast.
+Death and exposure data can be computed from the simulated portfolio. Below is an example with individuals in risk class 1. A Lee-Carter model is reestimated from the simulated data, and compared with the initial forecast.
 
 
 ```r
@@ -336,15 +359,18 @@ LC <- lc()
 LCfitSim1 <- fit(LC, Dxt = Dx , Ext = Ex,ages=age_grp[-length(age_grp)])
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_LeeCarter_risk1-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_LeeCarter_risk1-1.png")
 ```
+
+</div>
 
 ### Global portfolio
 
 Due to the mortality differential between risk class 1 and 2, there should be more individuals in risk class 2 at higher ages.
-However, due to exit events, more individuals in risk class 1 one exit the portfolio over time, leading to a higher proportion of individuals in risk class 1 at higher ages than expected when there are no exit events. Thus, mortality rates are closer to mortality rates in risk class 1 at higher ages.
+However, due to exit events, more individuals in risk class 1  exit the portfolio over time, leading to a higher proportion of individuals in risk class 1 at higher ages than expected when there are no exit events. Thus, mortality rates are closer to mortality rates in risk class 1 at higher ages.
 
 **Computation of central mortality rates**
 
@@ -355,37 +381,40 @@ Ex_pop <- exposure_table(sim_out$population, ages = age_grp, period = 0:30)
 mx_pop <- Dx_pop/Ex_pop
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_mortality_rates-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_mortality_rates-1.png")
 ```
+
+</div>
 
 **Evolution of portfolio mortality rates over time**
 
 The decrease in mortality rates is slower in the portfolio than in the global population due to composition changes.
 
+<div class="figure" style="text-align: center">
 
-```r
-matplot(age_grp[-length(age_grp)],log(mx_pop),
-        type='l', xlab = "age", ylab = "log mortality rates")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_evol_mortality-1.png")
 ```
 
-
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_evol_mortality-1.pdf")
-```
+</div>
 
 **Cohort mortality rates**
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("insur_cohort-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("insur_cohort-1.png")
 ```
+
+</div>
 
 # Different simulations with the same model
 
 The initial population and model parameters can be modified without have to recompile the model, in order to simulate the population model with different input. The event bounds must be modified accordingly before running again the simulation.
 
-A event can also be deactivated by setting the event bound to 0.
+An event can also be deactivated by setting the event bound to 0.
 
 See `vignette('IBMPopSim_human_pop')` for several examples.

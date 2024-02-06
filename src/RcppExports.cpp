@@ -11,28 +11,28 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // death_table
-Rcpp::NumericMatrix death_table(Rcpp::DataFrame pop_df, Rcpp::NumericVector ages, Rcpp::NumericVector period);
-RcppExport SEXP _IBMPopSim_death_table(SEXP pop_dfSEXP, SEXP agesSEXP, SEXP periodSEXP) {
+Rcpp::NumericMatrix death_table(Rcpp::DataFrame pop, Rcpp::NumericVector ages, Rcpp::NumericVector period);
+RcppExport SEXP _IBMPopSim_death_table(SEXP popSEXP, SEXP agesSEXP, SEXP periodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type pop_df(pop_dfSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type pop(popSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type ages(agesSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type period(periodSEXP);
-    rcpp_result_gen = Rcpp::wrap(death_table(pop_df, ages, period));
+    rcpp_result_gen = Rcpp::wrap(death_table(pop, ages, period));
     return rcpp_result_gen;
 END_RCPP
 }
 // exposure_table
-Rcpp::NumericMatrix exposure_table(Rcpp::DataFrame pop_df, Rcpp::NumericVector ages, Rcpp::NumericVector period);
-RcppExport SEXP _IBMPopSim_exposure_table(SEXP pop_dfSEXP, SEXP agesSEXP, SEXP periodSEXP) {
+Rcpp::NumericMatrix exposure_table(Rcpp::DataFrame pop, Rcpp::NumericVector ages, Rcpp::NumericVector period);
+RcppExport SEXP _IBMPopSim_exposure_table(SEXP popSEXP, SEXP agesSEXP, SEXP periodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type pop_df(pop_dfSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type pop(popSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type ages(agesSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type period(periodSEXP);
-    rcpp_result_gen = Rcpp::wrap(exposure_table(pop_df, ages, period));
+    rcpp_result_gen = Rcpp::wrap(exposure_table(pop, ages, period));
     return rcpp_result_gen;
 END_RCPP
 }

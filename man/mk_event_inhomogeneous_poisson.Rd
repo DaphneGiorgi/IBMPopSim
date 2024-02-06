@@ -2,7 +2,7 @@
 % Please edit documentation in R/events.R
 \name{mk_event_inhomogeneous_poisson}
 \alias{mk_event_inhomogeneous_poisson}
-\title{Creates inhomogeneous Poisson class event.}
+\title{Creating inhomogeneous Poisson class event}
 \usage{
 mk_event_inhomogeneous_poisson(type, name, intensity_code, kernel_code = "")
 }

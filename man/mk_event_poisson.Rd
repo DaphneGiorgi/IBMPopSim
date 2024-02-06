@@ -2,7 +2,7 @@
 % Please edit documentation in R/events.R
 \name{mk_event_poisson}
 \alias{mk_event_poisson}
-\title{Creates Poisson class event.}
+\title{Creating Poisson class event}
 \usage{
 mk_event_poisson(type, name, intensity, kernel_code = "")
 }
@@ -48,5 +48,5 @@ mk_model(events = list(birth, death), parameters = params)
 
 }
 \seealso{
-See also \code{\link{mk_model}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
+\code{\link{mk_model}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
 }

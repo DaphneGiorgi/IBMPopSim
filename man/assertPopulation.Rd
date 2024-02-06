@@ -4,7 +4,7 @@
 \alias{assertPopulation}
 \title{Function for internal use}
 \usage{
-assertPopulation(population)
+assertPopulation(object)
 }
 \description{
 Check on the population.

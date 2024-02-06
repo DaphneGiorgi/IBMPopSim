@@ -4,10 +4,10 @@
 \alias{id_complete}
 \title{Complete a population id}
 \usage{
-id_complete(population)
+id_complete(object, ...)
 }
 \arguments{
-\item{population}{population dataframe}
+\item{object}{A data frame containing at least a column \code{birth} and \code{death}, that will be converted in \link{population} class.}
 }
 \description{
 In a population with an \code{id} column, verifies that there are no NA \code{id} values,

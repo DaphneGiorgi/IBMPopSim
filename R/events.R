@@ -41,7 +41,7 @@ details_kernel_code <- function() {
 See \\code{vignette('IBMPopSim')} for more details."
 }
 
-#' Creates Poisson class event.
+#' Creating Poisson class event
 #'
 #' @description The function \code{mk_event_poisson} is used to create an event with intensity of type Poisson (constant intensity which does not depend on population or time).
 #' When the event occurs, something happens in the population.
@@ -64,7 +64,7 @@ See \\code{vignette('IBMPopSim')} for more details."
 #' mk_model(events = list(birth, death), parameters = params)
 #' }
 #'
-#' @seealso  See also \code{\link{mk_model}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
+#' @seealso \code{\link{mk_model}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, \code{\link{mk_event_interaction}}.
 #'
 #' @export
 mk_event_poisson <- function(type, name, intensity, kernel_code = '') {
@@ -89,7 +89,7 @@ mk_event_poisson <- function(type, name, intensity, kernel_code = '') {
     return(event)
 }
 
-#' Creates inhomogeneous Poisson class event.
+#' Creating inhomogeneous Poisson class event
 #'
 #' @description The function \code{mk_event_inhomogeneous_poisson} is used to create an event with intensity type inhomogeneous Poisson (time dependent intensity which does not depend on population).
 #' When the event occurs, something happens in the population.
@@ -123,7 +123,7 @@ mk_event_inhomogeneous_poisson <- function(type, name, intensity_code,
     return(event)
 }
 
-#' Creates an event with intensity of class individual.
+#' Creating an event with intensity of class individual
 #'
 #' @description Creates an event with intensity of class individual (without interactions). When the event occurs, something happens to an individual \code{I} in the population.
 #' The created event must be used with \code{\link{mk_model}}.
@@ -170,7 +170,7 @@ mk_event_individual <- function(type, name, intensity_code, kernel_code='') {
 }
 
 
-#' Creates an event with intensity of type interaction.
+#' Creating an event with intensity of type interaction
 #'
 #' @description Creates an event whose intensity depends on an individual and interactions with the population. When the event occurs, something happens to an individual \code{I} in the population. The intensity of the event can depend on time, the characteristics of I and other individuals in the population, and can be written as
 #' \deqn{d(I,t,pop) = \sum_{J \in pop} U(I,J,t),}
@@ -216,7 +216,28 @@ mk_event_interaction <- function(type, name, interaction_code, kernel_code='',
     return(event)
 }
 
-#' Summary of an event.
+
+#' Print Event
+#'
+#' @description \code{print} method for class "event" giving a short description of an event.
+#'
+#' @param x Argument of class \code{event}.
+#' @param ... Additional arguments affecting the summary produced.
+#'
+#' @export
+print.event <- function(x, ...) {
+  stopifnot(inherits(x, "event"))
+
+  cat("\t\n", sep="",
+      sprintf("%s, type: %s", x$type[1], x$type[2]),
+      if (is.null(x$name)) sprintf("\n") else sprintf(", name: %s\n", x$name)
+  )
+}
+
+
+#' Summarizing an event
+#'
+#' @description \code{summary} method for class \code{event} giving a detailed description of an event.
 #'
 #' @param object Argument of class \code{event}.
 #' @param ... Additional arguments affecting the summary produced.
@@ -226,8 +247,10 @@ summary.event <- function(object, ...) {
     stopifnot(inherits(object, "event"))
 
     cat("\t\n", sep="",
-        sprintf("%s, type: %s", object$type[1], object$type[2]),
-        if (is.null(object$name)) sprintf("\n") else sprintf(", name: %s\n", object$name)
+        sprintf("Event class : %s \nEvent type : %s \n", object$type[1], object$type[2]),
+        if (is.null(object$name)) sprintf("\n") else sprintf("Event name : %s\n", object$name),
+        sprintf("Intensity code : '%s' \n", object$intensity_code),
+        sprintf("Kernel code : '%s' \n", object$kernel_code)
     )
 }
 
@@ -268,4 +291,3 @@ check_interaction_code <- function(code) {
 check_kernel_code <- function(code) {
     # to do
 }
-

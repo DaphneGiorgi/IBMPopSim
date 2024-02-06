@@ -2,7 +2,7 @@
 % Please edit documentation in R/events.R
 \name{mk_event_interaction}
 \alias{mk_event_interaction}
-\title{Creates an event with intensity of type interaction.}
+\title{Creating an event with intensity of type interaction}
 \usage{
 mk_event_interaction(
   type,

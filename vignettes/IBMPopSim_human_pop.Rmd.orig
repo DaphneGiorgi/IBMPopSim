@@ -20,9 +20,9 @@ knitr::opts_chunk$set(
   echo = TRUE,
   fig.align = "center",
   collapse = TRUE,
-   dev = c('pdf', 'png'),
-  fig.width = 7,
-  fig.height = 5,
+  dev = 'png',
+  fig.width = 6,
+  fig.height = 4,
   dpi = 150
 )
 ```
@@ -31,9 +31,10 @@ knitr::opts_chunk$set(
 library(IBMPopSim)
 library(ggfortify)
 library(gridExtra)
+library(reshape2)
 ```
 
-This document provides a first simple example of usage of the package IBMPopSim, for simulating a human population with  birth and death events. See `vignette('IBMPopSim')` for a detailed presentation of the package.
+This document provides a first simple example of usage of the package `IBMPopSim`, for simulating a human population with birth and death events. See `vignette('IBMPopSim')` for a detailed presentation of the package.
 
 # Example description
 
@@ -44,18 +45,25 @@ Individuals can give birth (only if female) or die. Birth and death intensities 
 
 # Population creation
 
-
-The initial population is a 100 000 individuals population sampled from England and Wales' 2014 age pyramid distribution (source: Office for National Statistics).
+The initial population is created from a 100 000 individuals data frame sampled from England and Wales' 2014 age pyramid distribution (source: Office for National Statistics).
 
 ```{r}
 str(EW_pop_14)
 ```
 
-```{r, hp_pop_init}
-plot_population(EW_pop_14$sample)
+When creating a `?population`, internal functions proceed to several checks, including verifications on appropriate column names and types.
+
+```{r}
+pop_init <- population(EW_pop_14$sample)
+```
+
+```{r hp_pop_init}
+plot(pop_init)
 ```
 
 # Model parameters
+
+Birth and death rates are fitted to England and Wales' 2014 birth and death rates.
 
 ```{r}
 params <- with(EW_pop_14$rates,
@@ -83,7 +91,7 @@ There are 2 possible events :
 - Birth
 - Death
 
-Both event intensities are of type `individual`, which means that the intensity at which an individual gives birth or dies only depends on his age and characteristics, and not on other individuals characteristics (in other word, there are no interactions).
+Both event intensities are of class `individual`, which means that the intensity at which an individual gives birth or dies only depends on his age and characteristics, and not on other individuals characteristics (in other words, there are no interactions).
 
 The birth and the death intensities are bounded step functions, which are constant over time.
 
@@ -93,7 +101,8 @@ The birth and the death intensities are bounded step functions, which are consta
 birth_event <- mk_event_individual(
     type = "birth",
     intensity_code = "if (I.male) result = 0; else result = birth_rate(age(I, t));",
-    kernel_code = "newI.male = CUnif(0, 1) < p_male;" # Newborn is male with probability p_male
+    kernel_code = "newI.male = CUnif(0, 1) < p_male;"
+    # Newborn is male with probability p_male
 )
 ```
 
@@ -112,7 +121,7 @@ death_event <- mk_event_individual(
 
 ```{r}
 model <- mk_model(
-    characteristics = get_characteristics(EW_pop_14$sample),# Characteristics names ant type
+    characteristics = get_characteristics(pop_init), # Characteristics names and types
     events = list(birth_event, death_event), # Model events
     parameters = params # Model parameters
 )
@@ -130,8 +139,8 @@ death_max <- with(params, max(max(death_male), max(death_female)))
 
 ```{r}
 sim_out <- popsim(model = model,
-    population = EW_pop_14$sample, # Initial population
-     #Vector of intensity bounds, with name corresponding to events name:
+    initial_population = pop_init,
+     #Vector of intensity bounds, with name corresponding to events name
     events_bounds = c('birth' = birth_max, 'death' = death_max),
     parameters = params,
     time = 50,
@@ -153,37 +162,29 @@ sim_out$logs[["effective_events"]] / sim_out$logs[["proposed_events"]]
 
 **Outputs**
 
-`sim_out$population` is a data frame composed of all individuals who lived in the population over the period $[0,50]$ (individuals in the initial population and born during the simulation period).
-Each line corresponds to an individual, with his date of birth, date of death (`NA` if still alive at the end of the simulation) and gender.
+`sim_out$population` is an object of class `?population` given by a data frame composed of all individuals who lived in the population over the period $[0,50]$ (the individuals in the initial population and those born during the simulation period).
+Each line corresponds to an individual, with his date of birth , date of death (`NA` if still alive at the end of the simulation) and gender.
 
 
-The function `?age_pyramid` computes the age pyramid of  a population data frame at a given time.
+The function `?age_pyramid` returns an object of `?pyramid` class containing the age pyramid of a population at a given time.
 
 ```{r, hp_pyramids}
 pyr_init = age_pyramid(sim_out$population, time = 0,ages = c(0:100,Inf))
 pyr = age_pyramid(sim_out$population, time = 50, ages=c(0:100,Inf))
-grid.arrange(plot_pyramid(pyr_init),
-             plot_pyramid(pyr,value_breaks = seq(0,800,200)))
+grid.arrange(plot(pyr_init),
+             plot(pyr,value_breaks = seq(0,800,200)))
 ```
 
 Female age pyramid at t=50
 
 ```{r, hp_pyramid_50}
-plot_pyramid(pyr[pyr$male==FALSE,c("age","value")], age_breaks = as.integer(seq(1,101,5)))
+plot(pyr[pyr$male==FALSE,c("age","value")], age_breaks = as.integer(seq(1,101,5)))
 ```
 
-`?age_pyramids` (plural) returns a data frame representing the population age pyramids at different times.
+`?age_pyramids` (plural) returns an object of `?pyramid` class representing the population age pyramids at different times.
 
 ```{r}
-#pyrs = age_pyramids(sim_out$population, time = 1:50)
-```
-
-```{r}
-#library(gganimate)
-```
-
-```{r}
-#plot_pyramid(pyrs) + transition_time(time) + labs(title = "Time: {frame_time}")
+pyrs = age_pyramids(sim_out$population, time = 1:50)
 ```
 
 # Different simulations with the same model
@@ -194,16 +195,16 @@ plot_pyramid(pyr[pyr$male==FALSE,c("age","value")], age_breaks = as.integer(seq(
 The population evolution can be simulated starting from a different initial population, without having to recompile the model.
 
 ```{r}
-pop_sample_1e6 <- popsample(EW_pop_14$age_pyramid, size = 1e6)
+pop_sample_1e6 <- popsample(pyramid(EW_pop_14$age_pyramid), size = 1e6)
 ```
 
 ```{r, hp_pop_init_1e6}
-plot_population(pop_sample_1e6)
+plot(pop_sample_1e6)
 ```
 
 ```{r}
 sim_out <- popsim(model = model,
-    population = pop_sample_1e6, # Initial population
+    initial_population = pop_sample_1e6,
     events_bounds = c('birth' = birth_max, 'death' = death_max),
     parameters = params,
     time = 50,
@@ -221,7 +222,7 @@ Events intensities and/or kernels can be modified without recompiling the model,
 
 In the first toy model, mortality rates are assumed to be constant after age 90, with a maximum age of 120 in the population.  This leads to a significant increase in the number of individuals of age over 100, even though mortality rates don't change over time in this model.
 
-A more realistic assumption is to assume that mortality rates increase after age 90, by changing the model parameters `death_male` and `death_female`. The two step functions are replaced by functions of type `?piecewise_x` (see documentation), composed of a step function before age 90 and a linear function after for older ages.
+A more realistic assumption is to assume that mortality rates increase after age 90, by changing the model parameters `death_male` and `death_female`. The two step functions are replaced by functions of type `?piecewise_x`, composed of a step function before age 90 and a linear function for older ages.
 
 ```{r}
 death_male_90 <- params$death_male
@@ -234,14 +235,18 @@ params$death_female <- piecewise_x(c(89), list(death_female_90,old_death_female)
 ```
 
 ```{r, echo=FALSE, hp_log_death}
-plot(0:120, log(params$death_female(0:120)),type="l",main="log female death rates",ylab = "rates")
+ggplot()+
+geom_line(aes(x=0:120, y= log(params$death_female(0:120))))+
+xlab("Age")+
+ylab("Log rate")+
+ggtitle("Female death rates")
 ```
 
 Once the new model parameters have be defined, the event bounds must be updated.
 
 ```{r}
 sim_out_lin <- popsim(model = model,
-                  population = pop_sample_1e6, # Initial population
+                  initial_population = pop_sample_1e6,
                   events_bounds = c('birth' = birth_max, 'death' = 0.7),
                   parameters = params,
                   time = 50,
@@ -263,19 +268,19 @@ An event can be deactivated by setting the event bound to 0.
 
 ```{r}
 sim_out <- popsim(model = model,
-       population = EW_pop_14$sample,
+       initial_population = pop_init,
        events_bounds = c('birth' = 0, 'death' = death_max),
        parameters = params,
        age_max = 130,
        time = 50)
 ```
 
-The age pyramid can be directly plotted from the population data frame with `?plot_population`
+The age pyramid can be directly plotted from an object of class `?population` with the `?plot` function.
 
 ```{r, hp_pyramids2}
 grid.arrange(
-    plot_population(sim_out$population, time=0, ages= 0:105),
-    plot_population(sim_out$population, time=20, ages= 0:105)
+    plot(sim_out$population, time=0, ages= 0:105),
+    plot(sim_out$population, time=20, ages= 0:105)
     )
 ```
 
@@ -288,7 +293,7 @@ age_pyramid(sim_out$population, ages = seq(70,90,10), time = 30)
 The number of children by women can be recorded by adding a new characteristic (here named `children`) and changing the birth event kernel code.
 
 ```{r}
-chi <- get_characteristics(EW_pop_14$sample)
+chi <- get_characteristics(pop_init)
 chi <- c(chi, 'children' = 'int') # Addition  of characteristic "chi"
 
 ```
@@ -316,13 +321,13 @@ summary(model_child)
 ```
 
 ```{r}
-init_pop <- cbind(EW_pop_14$sample, "children"=0)
+init_pop <- population(cbind(pop_init, "children"=0))
 head(init_pop)
 ```
 
 ```{r}
 sim_out <- popsim(model_child,
-       population = init_pop,
+       initial_population = init_pop,
        events_bounds = c('birth_child' = birth_max, 'death' = death_max),
        parameters = params,
        time = 100,
@@ -375,15 +380,19 @@ params$CoD1_prop <- 0.6
 ```
 
 ```{r}
-death_event1 <- mk_event_individual(type = "death", name="CoD1",
-                        intensity_code = "if (I.male) result = CoD1_prop*death_male(age(I,t));
-                                         else result= CoD1_prop*death_female(age(I,t));",
-                        kernel_code = "I.CoD =1;" # Records cause of death when event occurs
+death_event1 <- mk_event_individual(
+                type = "death",
+                name="CoD1",
+                intensity_code = "if (I.male) result = CoD1_prop*death_male(age(I,t));
+                                  else result= CoD1_prop*death_female(age(I,t));",
+                kernel_code = "I.CoD =1;" # Records cause of death when event occurs
                                     )
-death_event2 <- mk_event_individual(type = "death", name="CoD2",
-                        intensity_code = "if (I.male) result = (1-CoD1_prop)*death_male(age(I,t));
-                                          else result= (1-CoD1_prop)*death_female(age(I,t));",
-                        kernel_code = "I.CoD =2;"
+death_event2 <- mk_event_individual(
+                type = "death",
+                name="CoD2",
+                intensity_code = "if (I.male) result = (1-CoD1_prop)*death_male(age(I,t));
+                                  else result= (1-CoD1_prop)*death_female(age(I,t));",
+                kernel_code = "I.CoD =2;"
                                     )
 ```
 
@@ -395,7 +404,7 @@ model_CoD <- mk_model(characteristics = chi,
 ```
 
 ```{r}
-init_pop_CoD <- cbind(pop_sample_1e6, "CoD"=NA) # Initial population
+init_pop_CoD <- population(cbind(pop_sample_1e6, "CoD"=NA)) # Initial population
 ```
 
 ```{r}
@@ -404,7 +413,7 @@ ev_bounds <- c('birth' = birth_max,
                'CoD2' = (1-params$CoD1_prop)*death_max)
 
 sim_out_CoD <- popsim(model_CoD,
-                  population = init_pop_CoD,
+                  initial_population = init_pop_CoD,
                   events_bounds = ev_bounds,
                   parameters = params,
                   time = 20,
@@ -418,13 +427,19 @@ The number of death for given age groups, time periods and for each cause of dea
 Example below: number of  males death of age between $[70,90]$ (single year of age groups) over the 5-year period $[15,20]$, for each cause.
 
 ```{r}
-Dx_1 <- death_table(subset(sim_out_CoD$population, CoD==1 & male==T),ages = 70:90, period = c(15,20))
-Dx_2 <- death_table(subset(sim_out_CoD$population, CoD==2 & male==T),ages = 70:90, period = c(15,20))
+Dx_1 <- death_table(subset(sim_out_CoD$population, CoD==1 & male==TRUE),
+                    ages = 70:90,
+                    period = c(15,20))
+Dx_2 <- death_table(subset(sim_out_CoD$population, CoD==2 & male==TRUE),
+                    ages = 70:90,
+                    period = c(15,20))
 ```
 
 ```{r}
 # Central exposure to risk:
-Ex <- exposure_table(subset(sim_out_CoD$population, male==T),ages = 70:90, period = c(15,20))
+Ex <- exposure_table(subset(sim_out_CoD$population, male==TRUE),
+                    ages = 70:90,
+                    period = c(15,20))
 # Males central death rates by for Cause 1:
 mx_1 <- Dx_1/Ex
 # Males central death rates by for Cause 2:
@@ -432,6 +447,13 @@ mx_2 <- Dx_2/Ex
 ```
 
 ```{r, warning=FALSE, hp_death_rate_1,echo=FALSE}
-plot(70:89,mx_1, col="red",type="b",main="Crude central death rate and true death intensity from cause 1")
-lines(70:89,params$CoD1_prop*params$death_male(70:89),col = "blue")
+df <- data.frame(Age=70:89, mx_1=mx_1, death_intensity=params$CoD1_prop*params$death_male(70:89))
+colnames(df) <- c("Age", "Central death rate", "Death intensity")
+df_melt <- melt(df, id="Age")
+
+ggplot(data=df_melt, aes(x=Age, y=value, color=variable, linetype=variable))+
+geom_line()+
+ylab("Death rate")+
+ggtitle("Central death rate and true death intensity for males and cause of death 1")+
+theme(legend.title = element_blank())
 ```

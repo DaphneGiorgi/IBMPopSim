@@ -2,20 +2,17 @@
 % Please edit documentation in R/pyramid.R
 \name{age_pyramids}
 \alias{age_pyramids}
-\title{Age pyramid from a population data frame at some given times.}
+\title{Generic method for age_pyramids}
 \usage{
-age_pyramids(population, time = 0, ages = c(0:110, Inf))
+age_pyramids(object, time = 0, ages = c(0:110, Inf))
 }
 \arguments{
-\item{population}{Population data frame: characteristics in columns and individuals in rows. At least two columns \code{birth} (dates of birth) and \code{death} (dates of death) are required.}
+\item{object}{Population.}
 
-\item{time}{The age pyramid is computed at instants \code{time}. Must be a numeric vector of greater than or equal to 0.}
+\item{time}{The age pyramid is computed at instant \code{time}. Must be a numeric greater than or equal to 0.}
 
 \item{ages}{\emph{(Optional)} A numeric vector of distinct positive values composing age groups. Must be in increasing order.}
 }
 \description{
-Vectorial version in time of the function \code{\link{age_pyramid}}. Not compatible with IBMs including swap events.
-}
-\details{
-For convenience. This is a just a \code{lapply} call of \code{age_pyramid} on the vector \code{time}.
+Generic method for age_pyramids
 }

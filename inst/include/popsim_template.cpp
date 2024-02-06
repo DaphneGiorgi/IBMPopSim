@@ -175,8 +175,8 @@ Rcpp::List popsim_cpp(Rcpp::DataFrame pop_df,
     Rcpp::NumericVector logs = Rcpp::NumericVector::create(
             Rcpp::Named("proposed_events")= C.proposedEvents,
             Rcpp::Named("effective_events")= C.effectiveEvents,
-            Rcpp::Named("cleanall_counter")= C.cleanAll,
-            Rcpp::Named("duration_main_algorithm")=secs_main_algorithm);
+            Rcpp::Named("cleanall_count")= C.cleanAll,
+            Rcpp::Named("duration_ns")=secs_main_algorithm);
     // Returns population and simulation info
     Rcpp::List L = Rcpp::List::create(
             Rcpp::Named("population") = new_pop_df,

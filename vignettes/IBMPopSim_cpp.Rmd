@@ -158,7 +158,7 @@ The characteristics of an individual are defined by a named character vector con
 
 ```r
 library(IBMPopSim)
-pop <- IBMPopSim::EW_popIMD_14$sample
+pop <- population(IBMPopSim::EW_popIMD_14$sample)
 get_characteristics(pop)
 ##   male    IMD 
 ## "bool"  "int"
@@ -177,13 +177,19 @@ event_birth <- mk_event_individual("birth", intensity_code = code)
 mod <- mk_model(get_characteristics(pop), events = list("birth" = event_birth), 
                 parameters = params, with_compilation = FALSE)
 summary(mod)
-## Events:
-## #1: individual event of type birth
+## Events description:
+## [[1]]	
+## Event class : individual 
+## Event type : birth 
+## Event name : birth
+## Intensity code : 'result = lambda + alpha * (age(I, t) + mu);' 
+## Kernel code : '' 
+## 
 ## --------------------------------------- 
 ## Individual description:
 ## names:  birth death male IMD 
 ## R types:  double double logical integer 
-## C types:  double double bool int
+## C types:  double double bool int 
 ## --------------------------------------- 
 ## R parameters available in C++ code:
 ## names:  lambda alpha mu 
@@ -237,28 +243,35 @@ We illustrate below some examples of the use of these functions:
 1. We define `dr` a `stepfun` depending on some values in `EW_pop_14$rates`. Note that this function applies to an age `a`.
 
 ```r
+library(ggfortify)
 dr <- with(EW_pop_14$rates,
            stepfun(x = death_male[,"age"], y = c(0, death_male[,"value"])))
-plot(dr, xlab="age", ylab="dr", main="Example of step function")
+autoplot(dr, xlab="age", ylab="dr", shape=NULL,main="Example of step function")
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("plot_stepfun-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("plot_stepfun-1.png")
 ```
+
+</div>
 
 We can also initialize a piecewise real function `f` defined by the function `dr` before age 80, and by a Gompertz-Makeham intensity function for ages after 80. 
 
 ```r
 f <- piecewise_x(80, list(dr, gompertz(0.00006, 0.085)))
 x <- seq(40, 110)
-plot(x, sapply(x, f), xlab="age", ylab="f", main="Example of piecewise function")
+ggplot(data.frame(x=x, y=sapply(x, f)), aes(x=x, y=y))+ geom_step() + xlab("Age") +ylab("f") + ggtitle("Example of piecewise function")
 ```
 
+<div class="figure" style="text-align: center">
 
-```{r, echo=FALSE, fig.align='center'}
-knitr::include_graphics("plot_piecewise-1.pdf")
+```{r, echo=FALSE, fig.align='center', out.width = '70%'}
+knitr::include_graphics("plot_piecewise-1.png")
 ```
+
+</div>
 
 2. Once a function has been created and defined as model parameter,  a model depending on the function can be defined. For example we use in the model below the `stepfun`  `dr` as a model parameter named `rate`. The function is used to defined the intensity of death events in the model.
 s
@@ -269,13 +282,19 @@ event <- mk_event_individual("death", intensity_code = "result = rate(age(I, t))
 mod <- mk_model(get_characteristics(pop), events = list("death" = event), 
                 parameters = params, with_compilation = FALSE)
 summary(mod)
-## Events:
-## #1: individual event of type death
+## Events description:
+## [[1]]	
+## Event class : individual 
+## Event type : death 
+## Event name : death
+## Intensity code : 'result = rate(age(I, t));' 
+## Kernel code : '' 
+## 
 ## --------------------------------------- 
 ## Individual description:
 ## names:  birth death male IMD 
 ## R types:  double double logical integer 
-## C types:  double double bool int
+## C types:  double double bool int 
 ## --------------------------------------- 
 ## R parameters available in C++ code:
 ## names:  rate 

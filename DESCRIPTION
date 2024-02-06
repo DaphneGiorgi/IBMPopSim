@@ -1,8 +1,8 @@
 Package: IBMPopSim
 Type: Package
 Title: Individual Based Model Population Simulation
-Version: 0.4.3
-Date: 2023-05-01
+Version: 1.0.0
+Date: 2024-02-06
 Authors@R: c(
     person('Daphné', 'Giorgi', role = c('aut', 'cre'), 
       email = 'daphne.giorgi@sorbonne-universite.fr'),
@@ -12,8 +12,10 @@ Authors@R: c(
       email = 'vincent.lemaire@sorbonne-universite.fr')
     )
 Maintainer: Daphné Giorgi <daphne.giorgi@sorbonne-universite.fr>
-Description: Simulation of the random evolution of structured population dynamics, called stochastic Individual Based Models (IBMs) (see e.g. Ferrière and Tran (2009) <doi:10.1051/proc/2009033>, Bansaye and Méléard (2015) <doi:10.1007/978-3-319-21711-6>, Boumezoued (2016)).
-    The package allows users to simulate the random evolution of a population in which individuals are characterised by their date of birth, a set of attributes, and their potential date of death.
+Description: Simulation of the random evolution of heterogeneous populations using stochastic Individual-Based Models (IBMs) <doi:10.48550/arXiv.2303.06183>. 
+    The package enables users to simulate population evolution, in which individuals are characterized by their age and some characteristics, and the population is modified by different types of events, including births/arrivals, death/exit events, or changes of characteristics. The frequency at which an event can occur to an individual can depend on their age and characteristics, but also on the characteristics of other individuals (interactions). 
+    Such models have a wide range of applications. For instance, IBMs can be used for simulating the evolution of a heterogeneous insurance portfolio with selection or for validating  mortality forecasts. 
+    This package overcomes the limitations of time-consuming IBMs simulations by implementing new efficient algorithms  based on thinning methods, which are compiled using the Rcpp package while providing a user-friendly interface.
 URL: https://github.com/DaphneGiorgi/IBMPopSim,
         https://DaphneGiorgi.github.io/IBMPopSim/
 BugReports: https://github.com/DaphneGiorgi/IBMPopSim/issues
@@ -22,16 +24,16 @@ Depends: R (>= 3.5.0)
 Imports: Rcpp (>= 0.12), checkmate, stats, readr, rlang, dplyr (>=
         0.8.0), ggplot2
 Suggests: RcppArmadillo, knitr, rmarkdown, bookdown, ggfortify, magick,
-        colorspace, gridExtra
+        colorspace, gganimate, gridExtra
 LinkingTo: Rcpp
 LazyData: true
 SystemRequirements: C++11
 NeedsCompilation: yes
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Encoding: UTF-8
-Packaged: 2023-01-06 09:43:54 UTC; giorgi
+Packaged: 2024-02-06 13:24:21 UTC; giorgi
 Author: Daphné Giorgi [aut, cre],
   Sarah Kaakai [aut],
   Vincent Lemaire [aut]

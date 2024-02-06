@@ -1,6 +1,8 @@
 ---
 title: "installation"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 The latest stable version can be installed from CRAN:
@@ -16,30 +18,27 @@ The latest development version can be installed from github:
 devtools::install_github('DaphneGiorgi/IBMPopSim')
 ```
 
-### First example to check installation 
+***First example to check installation***
 
-To illustrate the use of the package and to check the installation, a simple model with Poisson arrivals and exits is implemented. 
+To illustrate the use of the package and to check the installation, a simple model with Poisson arrivals and exits is implemented. Starting from an initial population `pop`, we define two events `birth` and `death` with intensity of Poisson type, we create the model `birth_death` and simulate the population evolution over 10 years.
 
 ```{r syntax_model, message = FALSE}
 library(IBMPopSim)
 
 init_size <- 100000
-pop <- data.frame(birth = rep(0, init_size), death = NA)
+pop_init <- population(data.frame(birth = rep(0, init_size), death = NA))
 
 birth = mk_event_poisson(type = 'birth', intensity = 'lambda')
 death = mk_event_poisson(type = 'death', intensity = 'mu')
 params = list('lambda' = 100, 'mu' = 100)
 
 # mk_model compiles C++ code using sourceCpp from Rcpp
-birth_death <- mk_model(events = list(birth, death),
+birth_death <- mk_model(characteristics = get_characteristics(pop_init),
+                        events = list(birth, death),
                         parameters = params)
-```
 
-If there are no errors then the C++ built environment is compatible with the package. The model is created and a C++ code has been compiled. The simulation is done using the `popsim` function.  
-
-```{r syntax_simu, message = FALSE}
 sim_out <- popsim(model = birth_death, 
-                  population = pop, 
+                  initial_population = pop_init, 
                   events_bounds = c('birth' = params$lambda, 'death' = params$mu),
                   parameters = params, 
                   time = 10)

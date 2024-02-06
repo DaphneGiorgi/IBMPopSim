@@ -57,7 +57,7 @@ simple model with Poisson arrivals and exits is implemented.
     library(IBMPopSim)
 
     init_size <- 100000
-    pop <- data.frame(birth = rep(0, init_size), death = NA)
+    pop <- population(data.frame(birth = rep(0, init_size), death = NA))
 
     birth = mk_event_poisson(type = 'birth', intensity = 'lambda')
     death = mk_event_poisson(type = 'death', intensity = 'mu')
@@ -72,11 +72,10 @@ the package. The model is created and a C++ code has been compiled. The
 simulation is done using the `popsim` function.
 
     sim_out <- popsim(model = birth_death, 
-                      population = pop, 
+                      initial_population = pop, 
                       events_bounds = c('birth' = params$lambda, 'death' = params$mu),
                       parameters = params, 
                       time = 10)
-    ## Simulation on  [0, 10]
 
     num_births <- length(sim_out$population$birth) - init_size
     num_deaths <- sum(!is.na(sim_out$population$death))
@@ -93,7 +92,7 @@ Quick model creation
 
 <!-- -->
 
-    pop <- EW_pop_14$sample
+    pop <- population(EW_pop_14$sample)
 
 -   The second step is to define the model parameters’ list:
 
@@ -123,9 +122,9 @@ Note that these events contain some C++ statements that depend
 
 <!-- -->
 
-    model <- mk_model(characteristics = get_characteristics(pop),
-                      events = list(death_event, birth_event),
-                      parameters = params)
+      model <- mk_model(characteristics = get_characteristics(pop),
+                        events = list(death_event, birth_event),
+                        parameters = params)
 
 -   In order to simulate a random trajectory of the population until a
     given time `T` bounds on the events intensities have to be
@@ -141,7 +140,6 @@ Then, the function `popsim` can be called:
 
     sim_out <- popsim(model, pop, events_bounds, params,
                       age_max = a_max, time = 30)
-    ## Simulation on  [0, 30]
 
 -   The data frame `sim_out$population` contains the information (date
     of birth, date of death, gender) on individuals who lived in the

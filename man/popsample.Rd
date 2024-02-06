@@ -2,26 +2,22 @@
 % Please edit documentation in R/pyramid.R
 \name{popsample}
 \alias{popsample}
-\title{Sample a population from an age pyramid (at a given time).}
+\title{Generic method for popsample}
 \usage{
 popsample(age_pyramid, size, age_max = 120, time = 0)
 }
 \arguments{
-\item{age_pyramid}{A data frame with columns \code{age}, \code{value} and others optional characteristics.}
+\item{age_pyramid}{Age pyramid.}
 
 \item{size}{A non-negative integer giving the number of individuals in population.}
 
-\item{age_max}{\emph{(Optional)} A non-negative numeric which replace (if exists) the \code{Inf} in \code{\link{age_pyramid}}.}
+\item{age_max}{\emph{(Optional)} A non-negative numeric which replace (if exists) the \code{Inf} in \code{\link{age_pyramid.population}}.}
 
 \item{time}{\emph{(Optional)} The age pyramid is computed at instant \code{time}. Must be a numeric greater than or equal to 0.}
 }
 \value{
-A data frame of size \code{size} containing a population of individuals.
+Object of \code{\link{population}} class representing a data frame of size \code{size} containing a population of individuals.
 }
 \description{
-Sample a population from an age pyramid (at a given time).
-}
-\examples{
-pop_sample_1e4 <- popsample(EW_pop_14$age_pyramid, size = 1e4)
-
+Generic method for popsample
 }

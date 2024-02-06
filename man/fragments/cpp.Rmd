@@ -135,7 +135,7 @@ Here is the conversion table used between the atomic types of R and C++.
 The characteristics of an individual are defined by a named character vector containing the name of the characteristic and the associated C++ type. The function `?get_characteristics` provides a way to extract the characteristics from a population data frame.
 ```{r, message=FALSE}
 library(IBMPopSim)
-pop <- IBMPopSim::EW_popIMD_14$sample
+pop <- population(IBMPopSim::EW_popIMD_14$sample)
 get_characteristics(pop)
 ```
 The requires `birth` and `death` characteristics are of type `double`. 
@@ -198,16 +198,17 @@ We illustrate below some examples of the use of these functions:
 
 1. We define `dr` a `stepfun` depending on some values in `EW_pop_14$rates`. Note that this function applies to an age `a`.
 ```{r, plot_stepfun}
+library(ggfortify)
 dr <- with(EW_pop_14$rates,
            stepfun(x = death_male[,"age"], y = c(0, death_male[,"value"])))
-plot(dr, xlab="age", ylab="dr", main="Example of step function")
+autoplot(dr, xlab="age", ylab="dr", shape=NULL,main="Example of step function")
 ```
 
 We can also initialize a piecewise real function `f` defined by the function `dr` before age 80, and by a Gompertz-Makeham intensity function for ages after 80. 
 ```{r, plot_piecewise}
 f <- piecewise_x(80, list(dr, gompertz(0.00006, 0.085)))
 x <- seq(40, 110)
-plot(x, sapply(x, f), xlab="age", ylab="f", main="Example of piecewise function")
+ggplot(data.frame(x=x, y=sapply(x, f)), aes(x=x, y=y))+ geom_step() + xlab("Age") +ylab("f") + ggtitle("Example of piecewise function")
 ```
 
 2. Once a function has been created and defined as model parameter,  a model depending on the function can be defined. For example we use in the model below the `stepfun`  `dr` as a model parameter named `rate`. The function is used to defined the intensity of death events in the model.

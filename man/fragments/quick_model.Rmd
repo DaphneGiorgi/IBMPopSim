@@ -7,7 +7,7 @@ title: "quick_model"
 library(IBMPopSim)
 ```
 ```{r}
-pop <- EW_pop_14$sample
+pop <- population(EW_pop_14$sample)
 ```
 
 - The second step is to define the model parameters' list:

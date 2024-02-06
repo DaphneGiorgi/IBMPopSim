@@ -5,10 +5,10 @@
 #'
 #' @name death_table
 #'
-#' @description Creates a death table from a population data frame.
+#' @description Creates a death table from a population object.
 #' For each \code{i=1..N-1} and \code{j=1..M}, the number of individuals with age at last birthday in \code{[ages[i],ages[i+1])} and died in \code{[times[j],times[j+1])} is computed.
 #'
-#' @param pop_df Population data frame containing at least \code{'birth'} and \code{'death'} columns.
+#' @param pop Object of class \code{\link{population}}.
 #' @param ages A vector of size \code{N} composed of age groups.
 #' @param period A vector of size \code{M} composed of time intervals.
 #'
@@ -17,11 +17,11 @@
 #' @return A death table matrix.
 #'
 #' @examples
-#' dth_table <-  death_table(EW_pop_out, 0:101, 0:31)
+#' dth_table <-  death_table(population(EW_pop_out), 0:101, 0:11)
 #'
 #' @export
-death_table <- function(pop_df, ages, period) {
-    .Call(`_IBMPopSim_death_table`, pop_df, ages, period)
+death_table <- function(pop, ages, period) {
+    .Call(`_IBMPopSim_death_table`, pop, ages, period)
 }
 
 #' Exposure table
@@ -38,10 +38,10 @@ death_table <- function(pop_df, ages, period) {
 #' @return An exposure matrix
 #'
 #' @examples
-#' ex_table <- exposure_table(EW_pop_out,0:101,0:2)
+#' ex_table <- exposure_table(population(EW_pop_out),0:101,0:11)
 #'
 #' @export
-exposure_table <- function(pop_df, ages, period) {
-    .Call(`_IBMPopSim_exposure_table`, pop_df, ages, period)
+exposure_table <- function(pop, ages, period) {
+    .Call(`_IBMPopSim_exposure_table`, pop, ages, period)
 }
 

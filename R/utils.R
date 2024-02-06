@@ -1,19 +1,22 @@
 #' Function for internal use
 #' @description Check on the population.
 #' @keywords internal
-assertPopulation <- function(population) {
-    assertDataFrame(population, min.rows = 1, col.names = "named",
+assertPopulation <- function(object) {
+    assertDataFrame(object, min.rows = 1, col.names = "named",
                     types = c('logical', 'integer', 'double', 'numeric', 'character'))
-    assertNames(names(population), must.include = c('birth', 'death'))
-    assertNumeric(population$birth, finite = TRUE, any.missing = FALSE)
-    assertNumeric(population$death, finite = TRUE)
+    assertNames(names(object), must.include = c('birth', 'death'))
+    assertNumeric(object$birth, finite = TRUE, any.missing = FALSE)
+    assertNumeric(object$death, finite = TRUE)
+    assertNumeric(object$entry, finite = TRUE, null.ok = TRUE, any.missing = TRUE)
     # if 'male', it must be a logical vector
-    assertLogical(population$male, null.ok = TRUE, any.missing = FALSE)
+    assertLogical(object$male, null.ok = TRUE, any.missing = FALSE)
+    # if 'out', it must be a logical vector
+    assertLogical(object$out, null.ok = TRUE, any.missing = FALSE)
     # if 'id', it must be numeric vector of distinct positive integers
-    assertInteger(population$id, null.ok = TRUE, any.missing = FALSE,
-                  lower = 0, unique = TRUE)
+    assertInteger(object$id, null.ok = TRUE, any.missing = FALSE,
+                lower = 0, unique = TRUE)
     # if 'group_name', it must be a vector of type character
-    assertCharacter(population$group, null.ok = TRUE, any.missing = FALSE)
+    assertCharacter(object$group, null.ok = TRUE, any.missing = FALSE)
 }
 
 #' Function for internal use
@@ -35,10 +38,21 @@ assertCharacteristics <- function(characteristics) {
     assertCharacter(characteristics, null.ok = TRUE, any.missing = FALSE)
     if (!is.null(characteristics)) {
         assertNames(characteristics, subset.of = c('bool', 'int', 'double', 'char'))
-        assertNames(names(characteristics), type = "unique", disjunct.from = c("I", "J", "t", "pop", "newI", "id", "entry", "out"))
+        assertNames(names(characteristics), type = "unique", disjunct.from = c("I", "J", "t", "pop", "newI"))
         # must be compatible with the identifier of a variable in C++
         assertCharacter(names(characteristics), pattern = "^[a-zA-Z0-9_]*$")
     }
+}
+
+#' Function for internal use
+#' @description Check events
+#' @keywords internal
+assertEvents <- function(events) {
+  assertList(events, types = 'event', min.len = 1, unique = TRUE,
+             null.ok = FALSE, any.missing = FALSE)
+  name_events <- sapply(events, function(e) { e$name })
+  assertCharacter(name_events, unique = TRUE, null.ok = FALSE,
+                  any.missing = FALSE, pattern = "^[a-zA-Z0-9_]*$")
 }
 
 #' Function for internal use
@@ -51,6 +65,94 @@ assertParameters <- function(parameters) {
         # must be compatible with the identifier of a variable in C++
         assertCharacter(names(parameters), pattern = "^[a-zA-Z0-9_]*$")
     }
+}
+
+#' Check population-model compatibility
+#' @description A function to check the compatibility between a population and a model
+#' @param pop An object of class \link{population}
+#' @param model An Individual Based Model created with the \link{mk_model} function
+#'
+#' @export
+compatibility_pop_model <- function(pop, model){
+  if (!setequal(names(pop), model$individual_type$names)){
+    msg <- "Population must be compatible with model and characteristics name.\n"
+
+    if ('id' %in% model$individual_type$names){
+      if (!'id' %in% names(pop)){
+        msg <- paste0(msg,"Model has an 'id' characteristic name and population has no 'id' column.\nAdd an id column to the population, for example by calling the population constructor with the flag 'id' set to TRUE.")
+      }
+    }
+
+    if ('id' %in% names(pop)){
+      if (!('id' %in% model$individual_type$names)){
+        msg <- paste0(msg,"Population has an 'id' column and model has no 'id' characteristic name.\nAdd id to model characteristics, for example by calling mk_model with characteristics = get_characteristics(pop).")
+      }
+    }
+
+    if ('entry' %in% model$individual_type$names){
+      if (!'entry' %in% names(pop)){
+
+        msg <- paste0(msg, "Model contains an 'entry' event and population has no 'entry' column.\nAdd an entry column to the population, for example by calling the population constructor with the flag 'entry' set to TRUE.")
+      }
+    }
+
+    if ('entry' %in% names(pop)){
+      if (!('entry' %in% model$individual_type$names)){
+
+        msg <- paste0(msg, "Population has an 'entry' column and model has no 'entry' characteristic name.\nAdd entry to model characteristics, for example by calling mk_model with characteristics = get_characteristics(pop).")
+      }
+    }
+
+    if ('out' %in% model$individual_type$names){
+      if (!'out' %in% names(pop)) {
+        msg <- paste0(msg, "Model contains an 'exit' event and population has no 'out' column.\nAdd an out column to the population, for example by calling the population constructor with the flag 'out' set to TRUE.")
+      }
+    }
+
+    if ('out' %in% names(pop)){
+      if (!'out' %in% model$individual_type$names){
+        msg <- paste0(msg, "Population has an 'out' column and model has no 'out' characteristic name.\nAdd out to model characteristics, for example by calling mk_model with characteristics = get_characteristics(pop).")
+      }
+    }
+
+    stop(msg)
+  }
+}
+
+#' Check characteristics-events compatibility
+#' @description A function to check the compatibility between characteristics and events
+#' @param characteristics List of characteristics
+#' @param events List of events
+#'
+#' @export
+compatibility_chars_events <- function(characteristics, events){
+  # if there is a swap event and no id characteristic, warn the user
+  if(has_event_type(events, 'swap') && !('id' %in% names(characteristics))){
+    warning("The list of events contains a 'swap' event and there is no 'id' in the characteristics.\nAdd 'id' to the characteristics if tracking changes along time is desired.")
+  }
+
+  # for incompatibilities with entry and exit events stop execution
+  # for an id characteristic without a corresponding swap event stop execution
+
+  if (has_event_type(events, 'entry') && !('entry' %in% names(characteristics))){
+    stop("The list of events contains an 'entry' event and there is no 'entry' in the characteristics names.\nAdd 'entry' (of type 'double') to the characteristics by hand, or create the population with the flag 'entry' set to TRUE.")
+  }
+
+  if (has_event_type(events, 'exit') && !('out' %in% names(characteristics))){
+    stop("The list of events contains an 'exit' event and there is no 'out' in the characteristics names.\nAdd 'out' (of type 'logical') to the characteristics by hand, or create the population with the flag 'out' set to TRUE.")
+  }
+
+  if ('id' %in% names(characteristics) && !(has_event_type(events, 'swap'))){
+    stop("'id' is a characteristics name reserved for 'swap' events.\nEither add a 'swap' event or change characteristic 'id' name.")
+  }
+
+  if ('entry' %in% names(characteristics) && !(has_event_type(events, 'entry'))){
+    stop("'entry' is a characteristics name reserved for 'entry' events.\nEither add an 'entry' event or change characteristic 'entry' name.")
+  }
+
+  if ('out' %in% names(characteristics) && !(has_event_type(events, 'exit'))){
+    stop("'out' is a characteristics name reserved for 'exit' events.\nEither add an 'exit' event or change characteristic 'out' name.")
+  }
 }
 
 #' A function returning a merged dataframe from a list of population dataframes with id.
@@ -76,25 +178,4 @@ merge_pop_withid <- function(pop_df_list, chars_tracked = NULL){
   return(result)
 }
 
-#' Returns a population of individuals alive.
-#'
-#' @param population A population data frame containing at least a column \code{'birth'} and \code{'death'}.
-#' @param  t  A numeric indicating the time.
-#' @param  a1  0 by default. All individuals of age over \code{a1} at \code{t} are selected.
-#' @param  a2 Inf by default. All individuals of age below \code{a2} at \code{t} are selected.
-#'
-#'@return  The function returns a population data frame containing all individuals alive at time \code{t} and of age in \code{[a1,a2)}.
-#'
-#'@export
-population_alive <- function(population, t, a1=0, a2=Inf) {
-  select = (is.na(population$death) | (population$death > t)) &
-    (t - population$birth>=a1) & (t - population$birth< a2)
-  if ('entry' %in% colnames(population)){
-    df_alive <- subset(population,
-                       select & (is.na(population$entry) | (population$entry <=t)))
-  }
-  else{
-    df_alive  <- subset(population, select)
-  }
-  return(df_alive)
-}
+

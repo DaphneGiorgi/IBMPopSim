@@ -2,7 +2,7 @@
 % Please edit documentation in R/events.R
 \name{summary.event}
 \alias{summary.event}
-\title{Summary of an event.}
+\title{Summarizing an event}
 \usage{
 \method{summary}{event}(object, ...)
 }
@@ -12,5 +12,5 @@
 \item{...}{Additional arguments affecting the summary produced.}
 }
 \description{
-Summary of an event.
+\code{summary} method for class \code{event} giving a detailed description of an event.
 }

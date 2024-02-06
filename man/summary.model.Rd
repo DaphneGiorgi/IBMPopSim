@@ -2,7 +2,7 @@
 % Please edit documentation in R/model.R
 \name{summary.model}
 \alias{summary.model}
-\title{Summary of a model.}
+\title{Summary of a model}
 \usage{
 \method{summary}{model}(object, ...)
 }
@@ -12,5 +12,5 @@
 \item{...}{additional arguments affecting the summary produced.}
 }
 \description{
-Summary of a model.
+\code{summary} method for class \code{model}.
 }

@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
   cache = FALSE,
   collapse = TRUE,
   dev = 'png',
-  fig.width = 7,
-  fig.height = 5,
+  fig.width = 6,
+  fig.height = 4,
   dpi = 150
 )
 ```
@@ -35,7 +35,7 @@ library(ggfortify)
 library(gridExtra)
 ```
 
-This document provides an example of usage of the package IBMPopSim, for simulating an interacting age-structured population with genetically variable traits, based on in [@MR2562651].
+This document provides an example of usage of the package `IBMPopSim`, for simulating an interacting age-structured population with genetically variable traits, based on [@MR2562651].
 
 See `vignette('IBMPopSim')` for a detailed presentation of the package.
 
@@ -62,7 +62,7 @@ $$x_0'  = \min(\max(0, x_0 + G), 4),$$
 
 where $G$ is a Gaussian random variable $\mathcal{N}(0,\sigma^2)$.
 
-- Death: Due to competition between individuals, the death intensity of an individual depends on the size of other individuals in the population. Bigger individuals have a better chance of survival, and if a individual of  size $x_0 +ga$ encounters an individual of size $x_0'+ ga'$, then it can die with the intensity
+- Death: Due to competition between individuals, the death intensity of an individual depends on the size of other individuals in the population. Bigger individuals have a better chance of survival, and if an individual of size $x_0 +ga$ encounters an individual of size $x_0'+ ga'$, then it can die with the intensity
 
 $$ U (x_0 + g a, x_0' - g a'),$$
 
@@ -70,18 +70,18 @@ where the interaction function $U$ is defined by
 
 $$U(x,y) = \beta \left( 1- \frac{1}{1+ c\exp(-4(x-y))}\right).$$
 
-The death intensity of an individual of size $x_0 + ga$ at time $t$ is thus the result of interactions with all individuals in the population (including himself)
+The death intensity of an individual of size $x_0 + ga$ at time $t$ is thus the result of the interactions with all individuals in the population (including himself)
 
 $$d(x_0,a,t,pop) = \sum_{(x_0', a') \in pop}  U (x_0 + g a, x_0' + g a').$$
 
 
-
 # Population creation
 
+The initial population is a generated `?population` of 900 individuals, with birth date uniformly chosen in [0,2] and with all the same birth size $x_0 = 1.06$.
 
 ```{r}
 # Generate population
-N <- 900  # Number of individuals in the initial population
+N <- 900
 x0 <- 1.06
 agemin <- 0.
 agemax <- 2.
@@ -89,11 +89,12 @@ agemax <- 2.
 
 
 ```{r}
-pop_init <- data.frame(
-  "birth" = -runif(N, agemin, agemax), # Age of each individual chosen uniformly in [0,2]
+pop_df_init <- data.frame(
+  "birth" = -runif(N, agemin, agemax),
   "death" = as.double(NA),
-  "birth_size" = x0 # All individuals have initially the same birth size x0.
+  "birth_size" = x0
 )
+pop_init <- population(pop_df_init)
 get_characteristics(pop_init)
 ```
 
@@ -119,7 +120,8 @@ The birth event is then an individual event of type birth, created as follows:
 ### Parameters
 
 ```{r}
-params_birth <- list( # parameters for birth event.
+# parameters for birth event
+params_birth <- list(
   "p" = 0.03,
   "sigma" = sqrt(0.01),
   "alpha" = 1)
@@ -152,6 +154,7 @@ This event intensity depends on the interaction kernel $U$, and is of type `inte
 ### Parameters
 
 ```{r}
+# parameters for death event
 params_death <- list(
   "g" = 1,
   "beta" = 2./300.,
@@ -166,7 +169,7 @@ death_event <- mk_event_interaction( # Event with intensity of type interaction
   type = "death",
   interaction_code = "double x_I = I.birth_size + g * age(I,t);
                       double x_J = J.birth_size + g * age(J,t);
-                      result = beta * ( 1.- 1./(1. + c * exp(-4. * (x_I-x_J))));" #  U
+                      result = beta * ( 1.- 1./(1. + c * exp(-4. * (x_I-x_J))));"
 )
 ```
 
@@ -176,7 +179,7 @@ death_event <- mk_event_interaction( # Event with intensity of type interaction
 model <- mk_model(
   characteristics = get_characteristics(pop_init),
   events = list(birth_event, death_event),
-  parameters = c(params_birth, params_death) # Model parameters
+  parameters = c(params_birth, params_death)
 )
 summary(model)
 ```
@@ -198,7 +201,7 @@ T = 500
 # Multithreading is NOT possible due to interaction between individuals
 
 sim_out <- popsim(model = model,
-  population = pop_init,
+  initial_population = pop_init,
   events_bounds = c('birth'=birth_intensity_max, 'death'=interaction_fun_max),
   parameters = c(params_birth, params_death),
   age_max = 2,
@@ -206,12 +209,13 @@ sim_out <- popsim(model = model,
 ```
 
 ```{r}
-sim_out$logs["duration_main_algorithm"]
+sim_out$logs["duration_ns"]
 ```
 
 # Outputs
 
-`sim_out$population` is a data frame containing the date of birth, death, and  characteristics of all individuals who lived in the population over the period [0,500].
+The output population `sim_out$population` contains all individuals who lived in the population over the period [0,500].
+
 ```{r}
 str(sim_out$population)
 pop_out <- sim_out$population
@@ -224,7 +228,7 @@ pop_size <- nrow(population_alive(pop_out,t = 500))
 pop_size
 ```
 
-Result from [@MR2562651] can be reproduce from the simulation.
+Result from [@MR2562651] can be reproduced from the simulation.
 For each individual in the population, we draw below a line representing its birth size during its life time.
 
 ```{r, echo=FALSE, inter_output2}
@@ -236,7 +240,6 @@ ggplot(pop_out) + geom_segment(
 ```
 
 # Simulation with different parameters
-
 
 The model can be simulated with different parameters without being recompiled.
 
@@ -254,7 +257,7 @@ Events bounds are not modified since they do not depend on $g$.
 
 ```{r}
 sim_out <- popsim(model = model,
-  population = pop_init,
+  initial_population = pop_init,
   events_bounds = c('birth'=birth_intensity_max, 'death'=interaction_fun_max),
   parameters = c(params_birth, params_death),
   age_max = 2,
@@ -274,7 +277,7 @@ ggplot(pop_out) +
 
 **Evolution of age pyramid by birth size**
 
-`?age_pyramid` returns the age pyramid  data frame of the population, by birth size at a given time.
+`?age_pyramid` returns the age pyramid of the population, by birth size at a given time.
 
 ```{r}
 pyr <- age_pyramid(pop_out, ages = seq(0,2,by=0.2), time = 500)
@@ -296,10 +299,10 @@ colors <- c(diverging_hcl(n=length(lbls), palette = "Red-Green"))
 names(colors) <- lbls
 ```
 
-`?plot_pyramid` allows the user to plot the age pyramid at a given time of a population composed of several subgroups, given a population data frame with a column named `group_name` (only needed for displaying several subgroups).
+`?plot.pyramid` allows the user to plot the age pyramid at a given time of a population composed of several subgroups, given an age pyramid with a column named `group_name` (only needed for displaying several subgroups).
 
 ```{r, inter_pyramid}
-plot_pyramid(pyr, group_colors = colors, group_legend = 'Birth size')
+plot(pyr, group_colors = colors, group_legend = 'Birth size')
 ```
 
 Due to the interaction between individuals, only bigger individuals survive at higher ages.
@@ -317,8 +320,9 @@ lbls <- sort(unique(pyrs$group_name))
 colors <- c(diverging_hcl(n=length(lbls), palette = "Red-Green"))
 names(colors) <- lbls
 
+# Only working for html render of the vignette
 # library(gganimate)
-# anim <- plot_pyramid(pyrs, group_colors = colors, group_legend = 'Birth size') +
+# anim <- plot(pyrs, group_colors = colors, group_legend = 'Birth size') +
 #             transition_time(time) +
 #             labs(title = "Time: {frame_time}")
 
@@ -332,11 +336,12 @@ We can do the same simulation with a bigger initial population. In order for the
 
 ```{r}
 N <- 2000
-pop_init_big <- data.frame(
+pop_df_init_big <- data.frame(
   "birth" = -runif(N, agemin, agemax), # Age of each individual chosen uniformly in [0,2]
   "death" = as.double(NA),
   "birth_size" = x0 # All individuals have initially the same birth size x0.
 )
+pop_init_big <- population(pop_df_init_big)
 ```
 
 ```{r}
@@ -356,7 +361,7 @@ interaction_fun_max <-  params_death$beta
 ```{r}
 sim_out <- popsim(
   model = model,
-  population = pop_init_big,
+  initial_population = pop_init_big,
   events_bounds = c('birth'=birth_intensity_max, 'death'=interaction_fun_max),
   parameters = c(params_birth, params_death),
   age_max = 2,
@@ -378,7 +383,6 @@ ggplot(sim_out$population) +
 
 # Model with "full" simulation algorithm
 
-
 In the presence of interactions, the randomized algorithm (activated by default in `?mk_event_interaction`) is much faster than the standard algorithm (named `full`) which requires to iterate through the population vector at each candidate event time.
 
 ```{r}
@@ -396,7 +400,7 @@ model_full <- mk_model(characteristics = get_characteristics(pop_init),
 
 ```{r}
 sim_out_full <- popsim(model = model_full,
-  population = pop_init_big,
+  initial_population = pop_init_big,
   events_bounds = c('birth' = birth_intensity_max, 'death' =interaction_fun_max),
   parameters = c(params_birth, params_death),
   age_max = 2,
@@ -404,7 +408,7 @@ sim_out_full <- popsim(model = model_full,
 ```
 
 ```{r}
-sim_out_full$logs["duration_main_algorithm"]/sim_out$logs["duration_main_algorithm"]
+sim_out_full$logs["duration_ns"]/sim_out$logs["duration_ns"]
 ```
 
 # References

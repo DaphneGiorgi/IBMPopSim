@@ -8,7 +8,6 @@ mk_model(
   characteristics = NULL,
   events,
   parameters = NULL,
-  with_id = FALSE,
   with_compilation = TRUE
 )
 }
@@ -18,8 +17,6 @@ mk_model(
 \item{events}{List of events in the model. See \code{\link{mk_event_poisson}}, \code{\link{mk_event_inhomogeneous_poisson}}, \code{\link{mk_event_individual}}, and \code{\link{mk_event_interaction}}.}
 
 \item{parameters}{Model parameters. A list of parameters of the model.}
-
-\item{with_id}{\emph{(Optional)} Logical argument, \code{FALSE} by default. If \code{TRUE}, each individuals is given a unique \code{id}, which allows the identification of individual life histories in the presence of swap events.}
 
 \item{with_compilation}{\emph{(Optional)} Logical parameter, \code{TRUE} by default. If \code{FALSE} the \code{sourceCpp} function is not called.}
 }
@@ -52,7 +49,7 @@ birth_event <- mk_event_individual(type = 'birth',
                                     else result=birth_rate(age(I,t));",
                                   kernel_code = "newI.male = CUnif(0, 1) < p_male;")
 
-model <- mk_model(characteristics = get_characteristics(EW_pop_14$sample),
+model <- mk_model(characteristics = get_characteristics(population(EW_pop_14$sample)),
                  events = list(death_event,birth_event),
                  parameters = params)
 

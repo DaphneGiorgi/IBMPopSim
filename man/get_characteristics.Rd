@@ -2,20 +2,15 @@
 % Please edit documentation in R/model.R
 \name{get_characteristics}
 \alias{get_characteristics}
-\title{Returns names and C types of the characteristics.}
+\title{Generic method for get_characteristics}
 \usage{
-get_characteristics(population)
+get_characteristics(object, ...)
 }
 \arguments{
-\item{population}{Population data frame: characteristics in columns and individuals in rows. At least two columns \code{birth} (dates of birth) and \code{death} (dates of death) are required.}
-}
-\value{
-Named vector composed of characteristics names and C types.
+\item{object}{An object.}
+
+\item{...}{Additional parameters.}
 }
 \description{
-Returns names and C types of the characteristics of the individuals in a population, from a population data frame.
-}
-\examples{
-get_characteristics(EW_pop_14$sample)
-
+Generic method for get_characteristics
 }

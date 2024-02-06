@@ -17,10 +17,10 @@ using namespace Rcpp;
 //'
 //' @name death_table
 //'
-//' @description Creates a death table from a population data frame.
+//' @description Creates a death table from a population object.
 //' For each \code{i=1..N-1} and \code{j=1..M}, the number of individuals with age at last birthday in \code{[ages[i],ages[i+1])} and died in \code{[times[j],times[j+1])} is computed.
 //'
-//' @param pop_df Population data frame containing at least \code{'birth'} and \code{'death'} columns.
+//' @param pop Object of class \code{\link{population}}.
 //' @param ages A vector of size \code{N} composed of age groups.
 //' @param period A vector of size \code{M} composed of time intervals.
 //'
@@ -29,14 +29,16 @@ using namespace Rcpp;
 //' @return A death table matrix.
 //'
 //' @examples
-//' dth_table <-  death_table(EW_pop_out, 0:101, 0:31)
+//' dth_table <-  death_table(population(EW_pop_out), 0:101, 0:11)
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::NumericMatrix death_table(Rcpp::DataFrame pop_df,
+Rcpp::NumericMatrix death_table(Rcpp::DataFrame pop,
         Rcpp::NumericVector ages,
         Rcpp::NumericVector period)
 {
+    if (! pop.inherits("population")) stop("Input must be a population() model object.");
+
     std::vector<double> _ages = Rcpp::as<std::vector<double>>(ages);
     std::vector<double> _period = Rcpp::as<std::vector<double>>(period);
 
@@ -84,10 +86,10 @@ Rcpp::NumericMatrix death_table(Rcpp::DataFrame pop_df,
     	uniform_period = !(std::any_of(std::next(diff_period.begin()), diff_period.end(), [h_period](double h) {return std::abs(h-h_period) > std::numeric_limits<double>::epsilon();}));
     }
 
-    auto names = as<std::vector<std::string>>(pop_df.names());
+    auto names = as<std::vector<std::string>>(pop.names());
 
-    Rcpp::NumericVector births = pop_df["birth"];
-    Rcpp::NumericVector deaths = pop_df["death"];
+    Rcpp::NumericVector births = pop["birth"];
+    Rcpp::NumericVector deaths = pop["death"];
 
     int pop_size = births.size();
 
@@ -96,7 +98,7 @@ Rcpp::NumericMatrix death_table(Rcpp::DataFrame pop_df,
     std::vector<bool> out(pop_size,false);
 
     if(is_out)
-    	out = Rcpp::as<std::vector<bool>>(pop_df["out"]);
+    	out = Rcpp::as<std::vector<bool>>(pop["out"]);
 
     // if uniform period and ages
     if (uniform_period && uniform_ages){
@@ -246,14 +248,16 @@ double exposure(double c_i, double d_i, double a, double t, double a_step = 1., 
 //' @return An exposure matrix
 //'
 //' @examples
-//' ex_table <- exposure_table(EW_pop_out,0:101,0:2)
+//' ex_table <- exposure_table(population(EW_pop_out),0:101,0:11)
 //'
 //' @export
 // [[Rcpp::export]]
-Rcpp::NumericMatrix exposure_table(Rcpp::DataFrame pop_df,
+Rcpp::NumericMatrix exposure_table(Rcpp::DataFrame pop,
                                     Rcpp::NumericVector ages,
                                     Rcpp::NumericVector period)
 {
+  if (! pop.inherits("population")) stop("Input must be a population() model object.");
+
   std::vector<double> _ages = Rcpp::as<std::vector<double>>(ages);
   std::vector<double> _period = Rcpp::as<std::vector<double>>(period);
 
@@ -274,17 +278,17 @@ Rcpp::NumericMatrix exposure_table(Rcpp::DataFrame pop_df,
 
   Rcpp::NumericMatrix exposure_matrix(N-1,M-1);
 
-  auto names = as<std::vector<std::string>>(pop_df.names());
+  auto names = as<std::vector<std::string>>(pop.names());
 
   auto is_entry = std::any_of(names.begin(), names.end(), [](std::string n){return n == "entry";});
 
   std::vector<double> entry;
 
   if(is_entry)
-    entry = Rcpp::as<std::vector<double>>(pop_df["entry"]);
+    entry = Rcpp::as<std::vector<double>>(pop["entry"]);
 
-  Rcpp::NumericVector births = pop_df["birth"];
-  Rcpp::NumericVector deaths = pop_df["death"];
+  Rcpp::NumericVector births = pop["birth"];
+  Rcpp::NumericVector deaths = pop["death"];
 
   int pop_size = births.size();
 

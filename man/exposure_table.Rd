@@ -4,10 +4,10 @@
 \alias{exposure_table}
 \title{Exposure table}
 \usage{
-exposure_table(pop_df, ages, period)
+exposure_table(pop, ages, period)
 }
 \arguments{
-\item{pop_df}{Population data frame containing at least \code{'birth'} and \code{'death'} columns.}
+\item{pop}{Object of class \code{\link{population}}.}
 
 \item{ages}{A vector of size \code{N} composed of age groups.}
 
@@ -24,6 +24,6 @@ The central Exposure-to-risk is computed as the sum of the time spent by individ
 The function computes the central exposure-to-risk in each time interval \code{[t[j],t[j+1])}, \code{j=1..M}, and age groups.
 }
 \examples{
-ex_table <- exposure_table(EW_pop_out,0:101,0:2)
+ex_table <- exposure_table(population(EW_pop_out),0:101,0:11)
 
 }

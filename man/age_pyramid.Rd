@@ -2,29 +2,22 @@
 % Please edit documentation in R/pyramid.R
 \name{age_pyramid}
 \alias{age_pyramid}
-\title{Age pyramid from a population data frame at a given time.}
+\title{Generic method for age_pyramid}
 \usage{
-age_pyramid(population, time = 0, ages = c(0:110, Inf))
+age_pyramid(object, time = 0, ages = c(0:110, Inf), ...)
 }
 \arguments{
-\item{population}{Population data frame: characteristics in columns and individuals in rows. At least two columns \code{birth} (dates of birth) and \code{death} (dates of death) are required.}
+\item{object}{Population.}
 
 \item{time}{The age pyramid is computed at instant \code{time}. Must be a numeric greater than or equal to 0.}
 
 \item{ages}{\emph{(Optional)} A numeric vector of distinct positive values composing age groups. Must be in increasing order.}
+
+\item{...}{Additional parameters}
 }
 \value{
-Age pyramid of a population at instant \code{time}. A data frame with columns \code{age} and \code{value}. Optional characteristics are preserved.
+An object of class \code{\link{pyramid}} containing the age pyramid of a population at instant \code{time}.
 }
 \description{
-Reduce a population data frame containing all individuals (with some characteristics) to an age-groups data frame (preserving characteristics). The function computes the number of individuals at \code{time} in each age group \code{[ages[i],ages[i+1][}, for \code{i} in \code{\{1,...,N-1\}}.
-}
-\details{
-See also \code{\link{age_pyramids}}.
-}
-\examples{
-age_pyramid(EW_pop_14$sample, time = 0)
-
-age_pyramid(EW_popIMD_14$sample, time = 0, ages = seq(0, 120, by=2))
-
+Generic method for age_pyramid
 }

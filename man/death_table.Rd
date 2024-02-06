@@ -4,10 +4,10 @@
 \alias{death_table}
 \title{Death table}
 \usage{
-death_table(pop_df, ages, period)
+death_table(pop, ages, period)
 }
 \arguments{
-\item{pop_df}{Population data frame containing at least \code{'birth'} and \code{'death'} columns.}
+\item{pop}{Object of class \code{\link{population}}.}
 
 \item{ages}{A vector of size \code{N} composed of age groups.}
 
@@ -17,13 +17,13 @@ death_table(pop_df, ages, period)
 A death table matrix.
 }
 \description{
-Creates a death table from a population data frame.
+Creates a death table from a population object.
 For each \code{i=1..N-1} and \code{j=1..M}, the number of individuals with age at last birthday in \code{[ages[i],ages[i+1])} and died in \code{[times[j],times[j+1])} is computed.
 }
 \details{
 The function computes the number of death in each time interval \code{[times[j],times[j+1])}, \code{j=1..M}.
 }
 \examples{
-dth_table <-  death_table(EW_pop_out, 0:101, 0:31)
+dth_table <-  death_table(population(EW_pop_out), 0:101, 0:11)
 
 }
