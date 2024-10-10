@@ -39,13 +39,15 @@ counter popsim_algorithm(population & pop,
             pop.cleanAll(t);
             ++C.cleanAll;
         }
-        if(pop.nAlive > 0) {
+        if(pop.nAlive > 0 || !cntxt.__no_entry) {
             // propose a time t
             double global_intensity_bound = 0.;
             for (int i = 0; i < NEVENTS; ++i) {
                 global_intensity_bound += events[i]->__lambda_bound(pop, cntxt);
                 _bounds[i] = global_intensity_bound;
             }
+            if (global_intensity_bound == 0.0)
+                break;
             t += CExp() / (global_intensity_bound);
 
             // propose an event

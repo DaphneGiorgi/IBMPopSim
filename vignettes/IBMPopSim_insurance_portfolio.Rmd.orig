@@ -32,7 +32,6 @@ library(IBMPopSim)
 library(ggfortify)
 library(gridExtra)
 library(StMoMo)
-library(demography)
 library(reshape2)
 ```
 
@@ -300,7 +299,7 @@ scale_linetype_manual(name="Legend", values=c("Estimated"="blank", "Point foreca
 scale_color_manual(name="Legend", values=c("Estimated"="blue", "Point forecast"="red"))+
 scale_shape_manual(name="Legend", values=c("Estimated"=19, "Point forecast"=NA))+
 ylab("Log mortality rates")+
-theme(legend.title = element_blank(), legend.position = c(0.2,0.8), plot.title = element_text(hjust = 0.5)) +
+theme(legend.title = element_blank(), legend.position.inside = c(0.2,0.8), plot.title = element_text(hjust = 0.5)) +
         ggtitle("Mortality rates for risk class 1 at t=30")
 ```
 

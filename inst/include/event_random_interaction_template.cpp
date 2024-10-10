@@ -4,12 +4,12 @@
 
 // Event "_NAME_"
 struct event_J_ : public event {
-    double __lambda(unsigned _k, population const & pop, double t, context & cntxt) const {
-        individual const & I = pop[_k];
+    double __lambda(unsigned _k, population & pop, double t, context & cntxt) const {
+        individual & I = pop[_k];
         unsigned _j = pop.pick_potentially_alive(t, cntxt);
 
         if (pop.is_alive(_j, t)) {
-            auto const & J = pop[_j];
+            auto & J = pop[_j];
             double result;
             _INTENSITY_CODE_
             return result;

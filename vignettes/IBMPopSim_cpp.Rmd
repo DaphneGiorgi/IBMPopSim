@@ -156,7 +156,7 @@ Here is the conversion table used between the atomic types of R and C++.
 
 The characteristics of an individual are defined by a named character vector containing the name of the characteristic and the associated C++ type. The function `?get_characteristics` provides a way to extract the characteristics from a population data frame.
 
-```r
+``` r
 library(IBMPopSim)
 pop <- population(IBMPopSim::EW_popIMD_14$sample)
 get_characteristics(pop)
@@ -170,7 +170,7 @@ The requires `birth` and `death` characteristics are of type `double`.
 The model parameters are given by a named list of R objects. We recall that the type of an R object can be determined by calling  the `?typeof` function. Atomic objects declared as model parameters can be directly used in the C++ code.   
 In the example below, the variable `code` contains simple C++ instructions depending on the parameters defined in `params`. The `summary` of the model `mod` gives useful information on the types of characteristics and parameters used in C++ code. 
 
-```r
+``` r
 params <- list("lambda" = 0.02, "alpha" = 0.4, "mu" = as.integer(2))
 code <- "result = lambda + alpha * (age(I, t) + mu);"
 event_birth <- mk_event_individual("birth", intensity_code = code)
@@ -242,7 +242,7 @@ We illustrate below some examples of the use of these functions:
 
 1. We define `dr` a `stepfun` depending on some values in `EW_pop_14$rates`. Note that this function applies to an age `a`.
 
-```r
+``` r
 library(ggfortify)
 dr <- with(EW_pop_14$rates,
            stepfun(x = death_male[,"age"], y = c(0, death_male[,"value"])))
@@ -259,7 +259,7 @@ knitr::include_graphics("plot_stepfun-1.png")
 
 We can also initialize a piecewise real function `f` defined by the function `dr` before age 80, and by a Gompertz-Makeham intensity function for ages after 80. 
 
-```r
+``` r
 f <- piecewise_x(80, list(dr, gompertz(0.00006, 0.085)))
 x <- seq(40, 110)
 ggplot(data.frame(x=x, y=sapply(x, f)), aes(x=x, y=y))+ geom_step() + xlab("Age") +ylab("f") + ggtitle("Example of piecewise function")
@@ -276,7 +276,7 @@ knitr::include_graphics("plot_piecewise-1.png")
 2. Once a function has been created and defined as model parameter,  a model depending on the function can be defined. For example we use in the model below the `stepfun`  `dr` as a model parameter named `rate`. The function is used to defined the intensity of death events in the model.
 s
 
-```r
+``` r
 params <- list("rate" = dr)
 event <- mk_event_individual("death", intensity_code = "result = rate(age(I, t));")
 mod <- mk_model(get_characteristics(pop), events = list("death" = event), 

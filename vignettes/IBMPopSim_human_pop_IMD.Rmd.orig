@@ -356,7 +356,7 @@ The first component of the variable `t_sim` below is the initial time. The simul
 The `events_bounds` names must correspond to the events names.
 
 ```{r}
-t_sim <- 0:10
+t_sim <- 0:50
 n <- length(t_sim)
 ```
 

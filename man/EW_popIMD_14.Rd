@@ -11,7 +11,7 @@ A list containing:
 
 Individuals in the age class 90+ are distributed in the single year of age classes as in the EW population.}
 \item{\code{death_rates}}{List containing 4 fields:
-\itemize{
+\describe{
 \item{\code{male}}{ Male death rates data frame, by IMD and single year of age (0-90+).}
 \item{\code{female}}{ Female death rates dataframe, by IMD and single year of age (0-90+).}
 }

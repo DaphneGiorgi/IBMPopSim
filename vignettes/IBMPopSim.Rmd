@@ -153,7 +153,7 @@ devtools::install_github('DaphneGiorgi/IBMPopSim')
 To illustrate the use of the package and to check the installation, a simple model with Poisson arrivals and exits is implemented. Starting from an initial population `pop`, we define two events `birth` and `death` with intensity of Poisson type, we create the model `birth_death` and simulate the population evolution over 10 years.
 
 
-```r
+``` r
 library(IBMPopSim)
 
 init_size <- 100000
@@ -178,7 +178,7 @@ num_births <- length(sim_out$population$birth) - init_size
 num_deaths <- sum(!is.na(sim_out$population$death))
 print(c("births" = num_births, "deaths" = num_deaths))
 ## births deaths 
-##    987    991
+##    967   1064
 ```
 
 Let's now take a closer look at each component of a model in `IBMPopSim`, starting from the population.
@@ -195,7 +195,7 @@ If **exit events** can occur, the population shall contain a characteristic name
 In the example below, individuals are described by their birth and death dates, as well a Boolean characteristics called male, and the `entry` characteristic. For instance, the first individual is a female whose age at $t_0=0$ is $107$ and who was originally in the population.
 
 
-```r
+``` r
 pop_init <- population(EW_pop_14$sample,entry=TRUE)
 str(pop_init)
 ## Classes 'population' and 'data.frame':	100000 obs. of  4 variables:
@@ -306,7 +306,7 @@ variables available (in addition to the model paramaters defined by the user) fo
 1. The intensity code below
 
 
-```r
+``` r
 death_intensity<- "if (I.male)
                        result = alpha_1*exp(beta_1*age(I, t));
                    else
@@ -324,7 +324,7 @@ d(t,a) = 0.1\exp(0.005a) 1_{\{0\leq t <5\}} + 0.08\exp(0.005a) 1_{\{5\leq t\}}
 This is done by creating the death function $d$ using the predefined package functions `?piecewise_xy` and `?gompertz`. The function is then recorded as a model parameter and used in the argument `intensity_code` of `?mk_event_individual`.
 
 
-```r
+``` r
 time_dep_function <- piecewise_xy(c(5),
                                   list(gompertz(0.1,0.005),
                                        gompertz(0.08,0.005)))
@@ -461,7 +461,7 @@ pop.add(newI);
 where `_KERNEL_CODE_` is replaced by the content of the `kernel_code` argument. For instance, in a population where individuals are characterized by their gender, the  kernel code
 
 
-```r
+``` r
 birth_kernel_code <- "newI.male = (CUnif(0, 1) < p_male);"
 ```
 
@@ -470,7 +470,7 @@ creates new individuals which are males with  probability `p_male`, or females o
 4. **Entry event**  When  an individual `I` enters the population, `I.entry` is set as the date at which the individual enters the population. When an entry  occurs the individual entering the population is not of age $0$. In this case, the user must specify the `kernel_code` argument indicating how the age and characteristics  of the new individual are chosen. For instance,
 
 
-```r
+``` r
 mk_event_poisson(type = "entry", name = "ev_example", intensity = "lambda",
                  kernel_code = "double a_I= max(CNorm(20,2),0);
                                 newI.set_age(a_I,t);")
@@ -522,7 +522,7 @@ $$d(a) = 0.008 \exp(0.02a),$$
 and females between 15 and 40 can give birth with birth intensity 0.05. The newborn is a male with probability $p_{male}= 0.51$.
 
 
-```r
+``` r
 params <- list("p_male"= 0.51,
                "birth_rate" = stepfun(c(15,40),c(0,0.05,0)),
                "death_rate" = gompertz(0.008,0.02))
@@ -575,7 +575,7 @@ $$ \bar \lambda_d = 0.008\exp(0.02 a_{max}).$$
 In our example, the death event has been named `"my_death_event"`. No name has been specified for the birth event which thus has the default name `"birth"`. Then,
 
 
-```r
+``` r
 a_max <- 120 # maximum age
 events_bounds <- c("my_death_event" = 0.008*exp(0.02*a_max),
                    "birth" = max(params$birth_rate))
@@ -589,7 +589,7 @@ Note that the `?max` operator has been overloaded for some predefined functions 
 Once the model and events bounds have been defined, a random trajectory of the population can be simulated by calling
 
 
-```r
+``` r
 sim_out <- popsim(model, pop, events_bounds, params,
                   age_max = a_max, time = 30)
 ```
@@ -620,10 +620,10 @@ Table: Logs parameters
 
 For instance, the acceptance rate in the toy model is
 
-```r
+``` r
 sim_out$logs['effective_events']/sim_out$logs['proposed_events']
 ## effective_events 
-##         0.217632
+##        0.2183868
 ```
 
 
@@ -640,13 +640,14 @@ By default, when the proportion of dead individuals in the population exceeds $1
 Before running the simulation, the events bounds should be updated accordingly accordingly. An event can also be removed by setting the corresponding event bound to 0.
 
 
-```r
+``` r
 params$death_rate <- gompertz(0.01,0.02) # New death rate
 
 events_bounds["my_death_event"] <- 0.01*exp(0.02*a_max) # Death event bound update
 
 new_sim_out <- popsim(model, pop, events_bounds,
                       params, age_max = a_max, time = 30) # Population simulation
+
 ```
 
 ### Outputs
@@ -654,7 +655,7 @@ new_sim_out <- popsim(model, pop, events_bounds,
 Base functions to study the simulation outputs are provided in the package. For instance, the population age pyramid can computed at a give time (resp. at multiple dates) with the function `?age_pyramid` (resp. `?age_pyramids`). We refer to the other vignettes for more details on age pyramids computation and visualization.
 
 
-```r
+``` r
 pop_out <- sim_out$population
 
 # Population age-pyramid at time 30:
@@ -673,7 +674,7 @@ knitr::include_graphics("main_plot_30-1.png")
 Mortality tables with compatibles with packages such as StMoMo can also be computed by with the functions `?death_table` and `?exposure_table`.
 
 
-```r
+``` r
 female_pop <- pop_out[pop_out$male==FALSE, ]
 Dxt <- death_table(female_pop, ages = 85:90, period = 20:30)    # Death table
 Ext <- exposure_table(female_pop, ages = 85:90, period = 20:30)
@@ -694,7 +695,7 @@ For $i=1\dots n$, the $i$th data frame describes individuals who lived in the po
 **Example**  We consider a population divided into two subgroups. Individuals can swap from subgroup 1 (resp. 2) to subgroup 2 (resp. 1) at  rate 0.1 (resp. 0.3).
 
 
-```r
+``` r
 pop <- population(data.frame("birth" = rep(0,1e5), "death" = rep(NA,1e5),
                   "sub_grp" = sample(1:2, 1e5, replace = TRUE)))
 
@@ -715,7 +716,7 @@ model_swap <- mk_model(characteristics = get_characteristics(pop),
 Then, the population is simulated from $t_0=0$ to $t_n =20$:
 
 
-```r
+``` r
 time_vec <- 0:20
 sim_out <-popsim(model =model_swap, initial_population= pop,
                  events_bounds = c("swap"=max(unlist(rates))),
@@ -727,7 +728,7 @@ sim_out <-popsim(model =model_swap, initial_population= pop,
 The model is an ergodic two states continuous time Markov chain with stationary distribution $(p_1,p_2)=(0,75,0.25)$. The figure below illustrates the convergence of the probability to be in subgroup 1 to $p_1$
 
 
-```r
+``` r
 pop_size <- nrow(pop)
 # Mean number of individuals in subgroup 1 at each time:
 p_1_t <- lapply(sim_out$population, function(pop_df){
@@ -736,7 +737,7 @@ p_1_t <- lapply(sim_out$population, function(pop_df){
 
 
 ```
-## Error: <text>:2:0: unexpected end of input
+## Error in parse(text = input): <text>:2:0: unexpected end of input
 ## 1: ggplot()+geom_line(aes(x=time_vec[-1],y=p_1_t)+xlab("Time")+ylab("Probability of subgroup 1")
 ##    ^
 ```
@@ -748,7 +749,7 @@ This example shows that IBMPopSim can also be used to simulated continuous time 
 It is possible also to isolate the individuals' life course, by adding an `id` column to the population, which can be done by setting `id=TRUE` in the population construction, or by calling the `?add_characteristic` function to an existing population, in order to identify each individual with a unique integer.
 
 
-```r
+``` r
 pop <- population(pop, id =TRUE)
 model_swap_id <- mk_model(characteristics =  get_characteristics(pop),
                           events = list(swap_event),
@@ -757,7 +758,7 @@ model_swap_id <- mk_model(characteristics =  get_characteristics(pop),
 
 
 
-```r
+``` r
 sim_out_id <-popsim(model = model_swap_id,
                     initial_population = pop,
                     parameters = rates,
@@ -768,31 +769,31 @@ sim_out_id <-popsim(model = model_swap_id,
 
 
 
-```r
+``` r
 head(sim_out_id$population[[1]])
 ##   id birth death sub_grp
-## 1  1     0    NA       2
-## 2  9     0    NA       1
+## 1  1     0    NA       1
+## 2  9     0    NA       2
 ## 3 17     0    NA       2
-## 4 25     0    NA       1
-## 5 33     0    NA       2
+## 4 25     0    NA       2
+## 5 33     0    NA       1
 ## 6 41     0    NA       1
 ```
 
 These data frames can be merged into a single data frame summarizing the life course of each individual, by calling the function `merge_pop_withid`.
 
 
-```r
+``` r
 pop_list <- sim_out_id$population
 pop_merge <- merge_pop_withid(pop_list, chars_tracked='sub_grp')
 head(pop_merge)
 ##      id birth death sub_grp_1 sub_grp_2 sub_grp_3 sub_grp_4 sub_grp_5
-## 1     1     0    NA         2         1         1         1         1
-## 2 32769     0    NA         1         2         1         1         1
-## 3 65537     0    NA         2         2         1         1         1
-## 4 98305     0    NA         1         2         1         2         1
-## 5 31074     0    NA         2         2         2         1         2
-## 6 63842     0    NA         1         1         1         2         1
+## 1     1     0    NA         1         1         1         1         1
+## 2 32769     0    NA         2         1         1         1         1
+## 3 65537     0    NA         2         2         2         2         2
+## 4 98305     0    NA         2         1         2         2         1
+## 5 31074     0    NA         1         1         1         1         1
+## 6 63842     0    NA         1         1         1         1         2
 ```
 
 Each line of `pop_merge` corresponds to the life course of one individual. However, the population is only represented at time $t=0,1..,5$, and this data frame doesn't account for exact swap event times or multiple swap events that occurred between between two time steps.

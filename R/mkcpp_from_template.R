@@ -231,6 +231,15 @@ mkcpp_popsim <- function(model, with_id) {
         code <- paste("#define WITH_ID\n", code)
     }
     code <- sub("_DECLARATION_INDIVIDUAL_", mkcpp_declaration_individual(model$individual_type), code)
+
+    Nevents <- length(model$events)
+    for (j in 1:Nevents){
+        if ("entry" %in% model$events[[j]]$type) {
+            code <- gsub("_NO_ENTRY_", "false", code) 
+        }
+    }
+    code <- gsub("_NO_ENTRY_", "true", code) 
+
     if (!is.null(model$parameters)) {
         params <- mkcpp_parameters(model$parameters, model$parameters_type)
         code <- sub("_DECLARATION_PARAMETERS_", params$decl_code, code)

@@ -24,6 +24,8 @@ struct context {
     std::vector<double> __intensity_bound;
 _DECLARATION_PARAMETERS_
 
+    static constexpr bool __no_entry = _NO_ENTRY_;
+
     template<typename ... Args>
     double Unif(Args&&... arg) { return std::uniform_real_distribution<double>(std::forward<Args>(arg)...)(__gen); }
 #define CUnif cntxt.Unif
@@ -61,7 +63,7 @@ _DECLARATION_PARAMETERS_
 
 // ***** DEFINITION_EVENTS
 struct event {
-    virtual double __lambda(unsigned k, population const & pop, double t, context & cntxt) const = 0;
+    virtual double __lambda(unsigned k, population & pop, double t, context & cntxt) const = 0;
     virtual double __lambda_bound(population const & pop, context & cntxt) const = 0;
     virtual void __kernel(unsigned k, population & pop, double t, context & cntxt) const = 0;
     virtual bool __apply(double t, population & pop, context & cntxt) const = 0;

@@ -155,7 +155,7 @@ age_pyramids.population <- function(object, time = 0, ages = c(0:110,Inf)) {
 #' plot.pyramid(pyrs) + transition_time(time) + labs(title = "Time: {frame_time}")
 #'}
 #' @export
-#'
+#' @method plot pyramid
 plot.pyramid <- function(x, group_colors = NULL, group_legend = 'Group',
                          age_breaks = NULL, value_breaks = NULL, ...) {
     assertPyramid(x)

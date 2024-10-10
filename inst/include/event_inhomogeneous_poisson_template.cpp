@@ -1,6 +1,6 @@
 // Event "_NAME_"
 struct event_J_ : public event {
-    double __lambda(unsigned _k, population const & pop, double t, context & cntxt) const {
+    double __lambda(unsigned _k, population & pop, double t, context & cntxt) const {
         double result = 0;
         _INTENSITY_CODE_
         return result;
