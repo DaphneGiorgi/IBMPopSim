@@ -2,11 +2,11 @@
 
 ## New features
 
-- Add 0 as absorbing point when there are no entry events
+- Stop simulation when the population is extinct, unless there are entry events
 - Remove const from pop and I in intensity function template. The intensity function can modify the population and the individual.  
-- Changed name of roxygen directives file, for package documentation available in command line
+- Change name of roxygen directives file, for having package documentation available in command line
 
-## Bug fixes
+## Minor changes
 - Remove dependency on demography in insurance portfolio vignette
 
 # IBMPopSim 1.0.0

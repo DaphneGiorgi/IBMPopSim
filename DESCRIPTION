@@ -32,7 +32,7 @@ VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Encoding: UTF-8
-Packaged: 2024-10-10 10:18:20 UTC; giorgi
+Packaged: 2024-10-11 08:55:56 UTC; giorgi
 Author: Daphné Giorgi [aut, cre],
   Sarah Kaakai [aut],
   Vincent Lemaire [aut]
