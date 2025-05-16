@@ -15,8 +15,8 @@ struct event_J_ : public event {
     }
     bool __apply(double t, population & pop, context & cntxt) const {
         // Make a reject strategy
-        double theta = RUnif() * __lambda_bound(pop, cntxt);
-        if (theta < __lambda(0, pop, t)) {
+        double theta = CUnif() * __lambda_bound(pop, cntxt);
+        if (theta < __lambda(0, pop, t, cntxt)) {
             unsigned _k = _PICK_IFNOT_ENTRY_;
             __kernel(_k, pop, t, cntxt);
             return true;
